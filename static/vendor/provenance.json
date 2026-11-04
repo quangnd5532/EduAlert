@@ -1,0 +1,14 @@
+[
+  {
+    "package": "chart.js",
+    "version": "4.4.9",
+    "source": "https://registry.npmjs.org/chart.js/-/chart.js-4.4.9.tgz",
+    "integrity": "sha512-EyZ9wWKgpAU0fLJ43YAEIF8sr5F2W3LqbS40ZJyHIner2lY14ufqv2VMp69MAiZ2rpwxEUxEhIH/0U3xyRynxg=="
+  },
+  {
+    "package": "swagger-ui-dist",
+    "version": "5.21.0",
+    "source": "https://registry.npmjs.org/swagger-ui-dist/-/swagger-ui-dist-5.21.0.tgz",
+    "integrity": "sha512-E0K3AB6HvQd8yQNSMR7eE5bk+323AUxjtCz/4ZNKiahOlPhPJxqn3UPIGs00cyY/dhrTDJ61L7C/a8u6zhGrZg=="
+  }
+]

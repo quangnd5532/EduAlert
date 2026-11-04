@@ -1,0 +1,24 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "EduAlert: serve",
+            "type": "process",
+            "command": "powershell.exe",
+            "args": ["-NoProfile", "-ExecutionPolicy", "RemoteSigned", "-File", "${workspaceFolder}/start.ps1", "-Demo"],
+            "options": {"cwd": "${workspaceFolder}"},
+            "isBackground": true,
+            "problemMatcher": {
+                "owner": "edualert",
+                "pattern": {"regexp": "^(.*):([0-9]+):([0-9]+): (.*)$", "file": 1, "line": 2, "column": 3, "message": 4},
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^EDUALERT_STARTING$",
+                    "endsPattern": "Uvicorn running on http://127[.]0[.]0[.]1:8000"
+                }
+            },
+            "presentation": {"reveal": "always", "panel": "dedicated", "clear": false},
+            "runOptions": {"instanceLimit": 1}
+        }
+    ]
+}

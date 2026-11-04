@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="csrf-token" content="{{csrf}}">
+<title>{{title}} · EduAlert</title>
+<link rel="stylesheet" href="/static/portal.css">
+<script defer src="/static/vendor/chart.umd.js">
+</script>
+<script defer src="/static/portal.js">
+</script>
+</head>
+<body data-page="{{page}}" data-student="{{student_id or ''}}">
+<a href="#main" class="skip">Đến nội dung</a>
+<aside class="sidebar">
+<a href="/dashboard" class="wordmark">Edu<span>Alert</span>
+<svg viewBox="0 0 32 32" aria-hidden="true">
+<path d="M3 19h6l4-12 6 21 4-13h6"/>
+</svg>
+</a>
+<div class="workspace">Không gian cố vấn<br>
+<small>Hỗ trợ học tập · Demo</small>
+</div>
+<nav aria-label="Điều hướng chính">{% for url,label,key in nav %}{% if user.role=='admin' or key not in ['admin','import','settings'] %}<a href="{{url}}" {% if page==key or (page=='detail' and key=='students') %}aria-current="page"{% endif %}>
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<rect x="4" y="4" width="16" height="16" rx="3"/>
+<path d="M4 10h16M10 10v10"/>
+</svg>{{label}}</a>{% endif %}{% endfor %}</nav>
+<div class="side-note">
+<strong>Mỗi cảnh báo là một cơ hội hỗ trợ.</strong>
+<p>Chỉ số nguy cơ giúp ưu tiên nguồn lực; không phải xác suất trượt hoặc bỏ học.</p>
+<details>
+<summary>Nhóm 5A</summary>
+<p>Nguyễn Duy Quang — 2351010170<br>Nguyễn Khánh Hưng — 2151010146<br>Lê Hà Tấn Phong — 2451012074</p>
+</details>
+</div>
+</aside>
+<div class="shell">
+<header class="topbar">
+<span>Hỗ trợ học tập <span class="muted">/ {{title}}</span>
+</span>
+<div class="user">
+<span class="avatar">{{user.name[:1]}}</span>
+<span>{{user.name}}<small>{{'Quản trị viên' if user.role=='admin' else 'Cố vấn học tập'}}</small>
+</span>
+<form action="/logout" method="post">
+<input type="hidden" name="csrf" value="{{csrf}}">
+<button class="text-button">Đăng xuất</button>
+</form>
+</div>
+</header>
+<main id="main">
+<div class="page-heading">
+<div>
+<h1>{{title}}</h1>
+<p>{% if page=='dashboard' %}Theo dõi diễn biến, nhận diện ưu tiên và kết nối hỗ trợ.{% elif page=='students' %}Hai kết quả đánh giá độc lập, một góc nhìn đầy đủ hơn.{% elif page=='detail' %}Hồ sơ giả lập · Đồng hành qua từng học kỳ.{% else %}EduAlert · Dữ liệu giả lập phục vụ bài thi giữa kỳ.{% endif %}</p>
+</div>
+<span class="demo-label">Dữ liệu demo</span>
+</div>
+<div id="feedback" role="status" aria-live="polite">
+</div>
+{% if page in ['dashboard','students','reports'] %}<form id="filters" class="filters">
+<label>Tìm sinh viên<input name="q" placeholder="Tên hoặc mã sinh viên">
+</label>
+<label>Học kỳ<select name="semester_id">{% for s in catalogs.semesters|reverse %}{% if s.completed and s.kind=='regular' %}<option value="{{s.id}}">{{s.name}}</option>{% endif %}{% endfor %}</select>
+</label>
+<label>Ngành<select name="major_id">
+<option value="">Tất cả ngành</option>{% for x in catalogs.majors %}<option value="{{x.id}}">{{x.name}}</option>{% endfor %}</select>
+</label>
+<label>Khóa<select name="cohort_id">
+<option value="">Tất cả khóa</option>{% for x in catalogs.cohorts %}<option value="{{x.id}}">{{x.name}}</option>{% endfor %}</select>
+</label>
+<label>Lớp<select name="class_id">
+<option value="">Tất cả lớp</option>{% for x in catalogs.classes %}<option>{{x.id}}</option>{% endfor %}</select>
+</label>
+<label>Mức nguy cơ<select name="level">
+<option value="">Tất cả mức</option>{% for x in ['Bình thường','Cần chú ý','Nguy cơ cao','Chưa đủ dữ liệu'] %}<option>{{x}}</option>{% endfor %}</select>
+</label>
+<label>Quy tắc<select name="rule">
+<option value="">Tất cả kết quả</option>
+<option value="true">Thỏa điều kiện</option>
+<option value="false">Không thỏa</option>
+<option value="unknown">Không đủ dữ liệu</option>
+<option value="none">Chưa có cấu hình</option>
+</select>
+</label>
+<label>Can thiệp<select name="status">
+<option value="">Tất cả trạng thái</option>{% for x in ['Chưa xử lý','Đang hỗ trợ','Chờ theo dõi','Hoàn tất'] %}<option>{{x}}</option>{% endfor %}</select>
+</label>
+<label>Sắp xếp<select name="sort">
+<option value="risk">Nguy cơ giảm dần</option>
+<option value="name">Họ tên</option>
+<option value="id">Mã sinh viên</option>
+</select>
+</label>
+<button class="primary">Áp dụng bộ lọc</button>
+<a id="export" class="button" href="/api/export">Xuất CSV</a>{% if page=='reports' %}<button type="button" id="print">In / lưu PDF</button>{% endif %}</form>{% endif %}
+{% if page in ['dashboard','reports'] %}<p id="report-context" class="muted">
+</p>
+<div id="metrics" class="metrics">
+</div>
+<div class="two-col">
+<section class="panel">
+<div class="panel-heading">
+<h2>Phân bố mức nguy cơ</h2>
+<span>Đơn vị: sinh viên</span>
+</div>
+<div class="chart-wrap">
+<canvas id="distribution" aria-label="Phân bố nguy cơ" role="img">
+</canvas>
+</div>
+<div id="distribution-table">
+</div>
+</section>
+<section class="panel">
+<div class="panel-heading">
+<h2>Diễn biến qua học kỳ</h2>
+<span>Cấu hình hiện hành · Số sinh viên / học kỳ</span>
+</div>
+<div class="chart-wrap">
+<canvas id="trend" aria-label="Diễn biến nguy cơ qua học kỳ" role="img">
+</canvas>
+</div>
+<div id="trend-table">
+</div>
+</section>
+</div>
+<section class="panel">
+<div class="panel-heading">
+<h2>{{'Ưu tiên hỗ trợ' if page=='dashboard' else 'Thống kê cùng bộ lọc'}}</h2>
+<span id="denominator">
+</span>
+</div>
+<div id="list">
+</div>
+</section>{% if page=='reports' %}<section class="panel">
+<h2>Trạng thái can thiệp</h2>
+<div id="plan-summary">
+</div>
+<p class="muted">So sánh qua kỳ là mô tả dữ liệu. Không khẳng định can thiệp là nguyên nhân duy nhất của thay đổi.</p>
+</section>{% endif %}{% endif %}
+{% if page=='students' %}<section class="panel">
+<div id="list">
+</div>
+<div id="pagination" class="pagination">
+</div>
+</section>{% endif %}
+{% if page=='detail' %}<div class="detail-toolbar">
+<label>Học kỳ đang xét<select id="detail-semester">{% for x in catalogs.semesters|reverse %}{% if x.completed and x.kind=='regular' %}<option value="{{x.id}}">{{x.name}}</option>{% endif %}{% endfor %}</select>
+</label>
+<button id="evaluate" class="primary">Lưu phiên đánh giá</button>
+</div>
+<div class="tabs" role="tablist">{% for key,label in [('overview','Tổng quan'),('academic','Lịch sử học tập'),('explain','Giải thích đánh giá'),('support','Can thiệp & theo dõi'),('simulate','Nếu… thì…')] %}<button role="tab" data-tab="{{key}}" aria-selected="{{'true' if loop.first else 'false'}}">{{label}}</button>{% endfor %}</div>
+<section id="overview" class="tab-panel">
+<div id="profile">
+</div>
+<div class="two-col">
+<div class="panel">
+<h2>GPA và mốc can thiệp</h2>
+<div class="chart-wrap">
+<canvas id="gpa-chart" role="img" aria-label="GPA thang 4 và số mốc can thiệp">
+</canvas>
+</div>
+</div>
+<div class="panel">
+<h2>Tín chỉ không đạt và nguy cơ</h2>
+<div class="chart-wrap">
+<canvas id="risk-chart" role="img" aria-label="Tỷ lệ không đạt phần trăm và điểm nguy cơ">
+</canvas>
+</div>
+</div>
+</div>
+<div id="chart-data" class="panel">
+</div>
+</section>
+<section id="academic" class="tab-panel" hidden>
+<div id="academic-data" class="panel">
+</div>
+<div id="debt-data" class="panel">
+</div>
+<div id="warning-data" class="panel"></div>
+{% if user.role=='admin' %}<details class="panel">
+<summary>Nhập / cập nhật kết quả học kỳ</summary>
+<form id="result-form" class="form-grid">
+<input name="student_id" type="hidden" value="{{student_id}}">
+<label>Mã học kỳ<select name="semester_id">{% for x in catalogs.semesters %}<option value="{{x.id}}">{{x.name}}</option>{% endfor %}</select>
+</label>{% for name,label,min,max in [('gpa','GPA học kỳ',0,4),('cumulative_gpa','GPA tích lũy',0,4),('registered','Tín chỉ đăng ký',0,60),('passed','Tín chỉ đạt',0,60),('failed','Tín chỉ không đạt',0,60),('accumulated','Tín chỉ tích lũy',0,500),('conduct','Điểm rèn luyện',0,100)] %}<label>{{label}}<input name="{{name}}" type="number" min="{{min}}" max="{{max}}" step="{{'0.01' if name in ['gpa','cumulative_gpa','conduct'] else '1'}}" {% if name in ['registered','passed','failed'] %}required{% endif %}>
+</label>{% endfor %}<label>Trạng thái<select name="status">
+<option value="completed">Hoàn thành</option>
+<option value="leave">Nghỉ học</option>
+</select>
+</label>
+<button class="primary">Lưu kết quả</button>
+</form>
+</details>{% endif %}</section>
+<section id="explain" class="tab-panel" hidden>
+<div id="explanation">
+</div>
+<details class="panel">
+<summary>Lịch sử đánh giá đã lưu (giữ nguyên phiên bản)</summary>
+<div id="evaluation-history">
+</div>
+</details>
+</section>
+<section id="support" class="tab-panel" hidden>
+<section class="panel">
+<h2>Lập kế hoạch hỗ trợ</h2>
+<form id="plan-form" class="form-grid">
+<label>Mục tiêu<textarea name="goal" required minlength="3" maxlength="2000" placeholder="Cùng sinh viên xác định mục tiêu cho kỳ tới">
+</textarea>
+</label>
+<label>Biện pháp<textarea id="suggestion" name="action" required minlength="3" maxlength="3000">
+</textarea>
+</label>
+<label>Ngày hẹn<input name="due_date" type="date" required>
+</label>
+<button class="primary">Tạo hồ sơ can thiệp</button>
+</form>
+<p class="muted">Gợi ý dựa trên danh sách môn nợ; cố vấn có thể sửa. Hồ sơ gắn với phiên đánh giá được lưu khi tạo.</p>
+</section>
+<div id="student-plans">
+</div>
+</section>
+<section id="simulate" class="tab-panel" hidden>
+<section class="panel">
+<h2>Mô phỏng học kỳ tiếp theo</h2>
+<p>Kịch bản giả định, không phải dự đoán chắc chắn. Dùng phiên bản cấu hình đang áp dụng; không sửa dữ liệu thật.</p>
+<form id="simulation-form" class="form-grid">
+<label>GPA dự kiến<input name="gpa" type="number" min="0" max="4" step="0.01" value="2.8" required>
+</label>
+<label>Tín chỉ đăng ký<input name="registered" type="number" min="1" max="60" value="20" required>
+</label>
+<label>Tín chỉ không đạt<input name="failed" type="number" min="0" max="60" value="0" required>
+</label>
+<label>Số tín chỉ đã tính GPA tích lũy (không bắt buộc)<input name="previous_gpa_credits" type="number" min="1" max="600" placeholder="Lấy từ bảng điểm, không phải số tín chỉ đã đạt">
+</label>
+<label class="check-label"><input name="no_repeats" type="checkbox">Giả định kỳ tới không có học phần học lại</label>
+<label class="check-label"><input name="all_registered_count" type="checkbox">Giả định mọi tín chỉ đăng ký kỳ tới đều tính GPA, kể cả môn không đạt</label>
+<p class="muted full">Chỉ tính GPA tích lũy giả định khi có GPA tích lũy hiện tại, đủ số tín chỉ tính GPA và xác nhận cả hai giả định. Điểm nguy cơ vẫn tính độc lập.</p>
+<div>
+<button class="primary">Tính kịch bản</button>
+<button type="reset">Khôi phục đầu vào</button>
+</div>
+</form>
+</section>
+<div id="simulation-output" aria-live="polite">
+</div>
+</section>{% endif %}
+{% if page=='import' %}<div class="notice">Nhập theo thứ tự: danh mục & tài khoản → sinh viên → kết quả học kỳ → môn nợ / lịch sử cảnh báo. Mã sinh viên là chuỗi. UTF-8 / BOM · tối đa 2 MB, 5.000 dòng.</div>
+<section class="panel">
+<h2>1. Chọn mẫu và kiểm tra</h2>
+<div class="download-links">{% for x,l in [('students','Sinh viên'),('results','Kết quả học kỳ'),('debts','Học phần nợ'),('warnings','Lịch sử cảnh báo')] %}<a class="button" href="/api/import/template/{{x}}">Mẫu {{l}}</a>{% endfor %}</div>
+<form id="import-form" class="form-grid">
+<label>Loại dữ liệu<select name="kind">
+<option value="students">Sinh viên</option>
+<option value="results">Kết quả học kỳ</option>
+<option value="debts">Học phần nợ</option>
+<option value="warnings">Lịch sử cảnh báo</option>
+</select>
+</label>
+<label>Khi trùng với cơ sở dữ liệu<select name="mode">
+<option value="skip">Bỏ qua bản ghi đã tồn tại</option>
+<option value="update">Cập nhật toàn bộ trường từ tệp</option>
+</select>
+</label>
+<label>Tệp CSV<input name="file" type="file" accept=".csv,text/csv" required>
+</label>
+<button class="primary">Kiểm tra và xem trước</button>
+</form>
+</section>
+<section class="panel">
+<h2>2. Xem trước và xác nhận</h2>
+<div id="import-preview">Chưa có tệp. Không có dữ liệu nào được ghi trước khi xác nhận.</div>
+</section>{% endif %}
+{% if page=='settings' %}<div class="notice">Bộ quy tắc minh họa phục vụ demo, không phải quy chế chính thức. Ưu tiên phạm vi: ngành + khóa → ngành → khóa → toàn cục. Kích hoạt không sửa các đánh giá đã lưu.</div>
+<section class="panel">
+<h2>Tạo phiên bản nháp</h2>
+<form id="config-form" class="form-grid">
+<label>Tên phiên bản<input name="name" value="Bộ quy tắc minh họa phục vụ demo" required maxlength="120">
+</label>
+<label>Ngành<select name="major_id">
+<option value="">Toàn bộ</option>{% for x in catalogs.majors %}<option value="{{x.id}}">{{x.name}}</option>{% endfor %}</select>
+</label>
+<label>Khóa<select name="cohort_id">
+<option value="">Toàn bộ</option>{% for x in catalogs.cohorts %}<option value="{{x.id}}">{{x.name}}</option>{% endfor %}</select>
+</label>
+<label class="full">Quy tắc và trọng số (JSON, kiểm tra theo danh sách trường / toán tử cho phép)<textarea id="config-json" name="payload" rows="20" spellcheck="false">{{default_config|tojson(indent=2)}}</textarea>
+</label>
+<p class="muted full">weights: GPA, không đạt, xu hướng, lặp lại; tổng = 100. Toán tử lt/le/gt/ge/eq; nhóm AND/OR. Trường: gpa, cumulative_gpa, failed_ratio, conduct. attention/high là ranh giới phân loại.</p>
+<button class="primary">Lưu bản nháp mới</button>
+</form>
+</section>
+<section class="panel">
+<h2>Phiên bản cấu hình</h2>
+<div id="config-list">
+</div>
+<div id="config-preview" aria-live="polite">
+</div>
+</section>{% endif %}
+{% if page=='interventions' %}<div class="actions">
+<button id="board-toggle">Đổi danh sách / bảng trạng thái</button>
+<a class="button" href="/students">Chọn sinh viên để tạo hồ sơ</a>
+</div>
+<div id="plans">
+</div>{% endif %}
+{% if page=='admin' %}<div class="tabs" role="tablist">
+<button role="tab" data-tab="assignments" aria-selected="true">Sinh viên & phân công</button>
+<button role="tab" data-tab="accounts" aria-selected="false">Tài khoản cố vấn</button>
+<button role="tab" data-tab="catalogs" aria-selected="false">Danh mục</button>
+</div>
+<section id="assignments" class="tab-panel">
+<section class="panel">
+<h2>Thêm hoặc cập nhật sinh viên</h2>
+<p>Nhập mã đã có để cập nhật; giao diện sẽ yêu cầu xác nhận bản ghi cụ thể.</p>
+<form id="student-form" class="form-grid">
+<label>Mã sinh viên<input name="id" required pattern="[A-Za-z0-9_-]{1,30}">
+</label>
+<label>Họ và tên giả lập<input name="name" required minlength="2" maxlength="120">
+</label>
+<label>Lớp<select name="class_id">{% for x in catalogs.classes %}<option>{{x.id}}</option>{% endfor %}</select>
+</label>
+<label>Cố vấn phụ trách<select name="advisor_id">{% for x in users %}{% if x.role=='advisor' and x.active %}<option value="{{x.id}}">{{x.name}}</option>{% endif %}{% endfor %}</select>
+</label>
+<label>Điểm xét tuyển<input name="admission_score" type="number" step="0.01" min="0">
+</label>
+<label>Thang điểm<input name="admission_scale" type="number" step="0.01" min="0.01">
+</label>
+<label>Phương thức<input name="admission_method">
+</label>
+<button class="primary">Lưu sinh viên & phân công</button>
+<button id="lookup-student" type="button">Tải hồ sơ theo mã để sửa</button>
+</form>
+</section>
+</section>
+<section id="accounts" class="tab-panel" hidden>
+<section class="panel">
+<h2>Tài khoản cố vấn</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Tài khoản</th>
+<th>Họ tên</th>
+<th>Trạng thái</th>
+<th>Thao tác</th>
+</tr>
+</thead>
+<tbody>{% for x in users if x.role=='advisor' %}<tr>
+<td>{{x.username}}</td>
+<td>{{x.name}}</td>
+<td>{{'Hoạt động' if x.active else 'Đã khóa'}}</td>
+<td>
+<button data-toggle-user="{{x.id}}" data-active="{{'false' if x.active else 'true'}}">{{'Khóa' if x.active else 'Mở khóa'}}</button>
+</td>
+</tr>{% endfor %}</tbody>
+</table>
+</div>
+<form id="account-form" class="form-grid">
+<label>Tên đăng nhập<input name="username" required minlength="3" maxlength="50" autocomplete="off">
+</label>
+<label>Tên hiển thị giả lập<input name="name" required minlength="2">
+</label>
+<label>Mật khẩu ban đầu<input name="password" type="password" required minlength="10" maxlength="128" autocomplete="new-password">
+</label>
+<button class="primary">Tạo tài khoản cố vấn</button>
+</form>
+</section>
+</section>
+<section id="catalogs" class="tab-panel" hidden>
+<section class="panel">
+<h2>Quản lý danh mục</h2>
+<form id="catalog-form" class="form-grid">
+<label>Danh mục<select name="catalog_kind">
+<option value="majors">Ngành</option>
+<option value="cohorts">Khóa</option>
+<option value="classes">Lớp</option>
+<option value="courses">Học phần</option>
+<option value="semesters">Học kỳ mới</option>
+</select>
+</label>
+<label>Mã<input name="id" required pattern="[A-Za-z0-9_-]{1,30}">
+</label>
+<label>Tên<input name="name" required minlength="2">
+</label>
+<label>Ngành (cho lớp)<select name="major_id">
+<option value="">Chọn</option>{% for x in catalogs.majors %}<option value="{{x.id}}">{{x.name}}</option>{% endfor %}</select>
+</label>
+<label>Khóa (cho lớp)<select name="cohort_id">
+<option value="">Chọn</option>{% for x in catalogs.cohorts %}<option value="{{x.id}}">{{x.name}}</option>{% endfor %}</select>
+</label>
+<label>Tín chỉ (học phần)<input name="credits" type="number" min="1" max="20">
+</label>
+<label>Thứ tự (học kỳ mới)<input name="sequence" type="number" min="1">
+</label>
+<label>Loại học kỳ<select name="kind">
+<option value="regular">Kỳ chính</option>
+<option value="summer">Kỳ hè</option>
+</select>
+</label>
+<button class="primary">Lưu danh mục</button>
+</form>
+<p class="muted">Mã đã có được cập nhật tên/thông tin; học kỳ đã có không đổi thứ tự để bảo toàn diễn giải lịch sử.</p>{% for key,label in [('majors','Ngành'),('cohorts','Khóa'),('classes','Lớp'),('courses','Học phần'),('semesters','Học kỳ')] %}<h3>{{label}}</h3>
+<div class="table-wrap">
+<table>
+<tbody>{% for x in catalogs[key] %}<tr>
+<th>{{x.id}}</th>
+<td>{{x.name}}</td>
+<td>{{x.major_id or ''}} {{x.cohort_id or ''}} {{x.credits or ''}} {{x.sequence or ''}}</td>
+</tr>{% endfor %}</tbody>
+</table>
+</div>{% endfor %}</section>
+</section>{% endif %}
+<noscript>
+<p class="notice error">Bật JavaScript để thao tác bảng, biểu đồ và biểu mẫu nghiệp vụ.</p>
+</noscript>
+</main>
+<footer>EduAlert · Nhóm 5A <span>Bộ quy tắc minh họa phục vụ demo · Dữ liệu giả lập</span>
+</footer>
+</div>
+<script type="application/json" id="catalog-data">{{catalogs|tojson}}</script>
+</body>
+</html>

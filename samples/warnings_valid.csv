@@ -1,0 +1,7 @@
+﻿student_id,semester_id,warned
+009001,1,false
+009001,2,false
+009001,3,false
+009001,4,true
+009001,5,true
+009001,6,false

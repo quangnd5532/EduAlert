@@ -1,0 +1,14 @@
+.venv/
+.venv312/
+.venv313/
+__pycache__/
+.pytest_cache/
+data/
+*.log
+.env
+*.key
+*.db
+*.db-shm
+*.db-wal
+.coverage
+htmlcov/

@@ -1,0 +1,72 @@
+Run at 2026-11-03T14:53:42.660661+00:00
+Python: 3.15.2 (tags/v3.15.2:5e58eaa, Oct 25 2026, 17:27:03) [MSC v.1951 64 bit (AMD64)]
+Scope: syntax/unit checks only. No server, migration, API or browser E2E verification.
+
+$ C:\Users\Quang\Documents\EduAlert\.venv\Scripts\python.exe -m compileall -q app migrations scripts tests
+
+Exit code: 0
+
+$ C:\Users\Quang\Documents\EduAlert\.venv\Scripts\python.exe -m unittest tests.test_assessment tests.test_demo_data -v
+test_classification_boundaries (tests.test_assessment.AssessmentTests.test_classification_boundaries) ... ok
+test_config_invalid_shape (tests.test_assessment.AssessmentTests.test_config_invalid_shape) ... ok
+test_confirmed_no_warning_vs_unknown (tests.test_assessment.AssessmentTests.test_confirmed_no_warning_vs_unknown) ... ok
+test_equal_gpa_not_strict_decline (tests.test_assessment.AssessmentTests.test_equal_gpa_not_strict_decline) ... ok
+test_fail_clamp (tests.test_assessment.AssessmentTests.test_fail_clamp) ... ok
+test_gpa_clamps (tests.test_assessment.AssessmentTests.test_gpa_clamps) ... ok
+test_hand_calculation (tests.test_assessment.AssessmentTests.test_hand_calculation) ... ok
+test_increase_not_decline (tests.test_assessment.AssessmentTests.test_increase_not_decline) ... ok
+test_invalid_credits (tests.test_assessment.AssessmentTests.test_invalid_credits) ... ok
+test_invalid_gpa (tests.test_assessment.AssessmentTests.test_invalid_gpa) ... ok
+test_leave_breaks_trend (tests.test_assessment.AssessmentTests.test_leave_breaks_trend) ... ok
+test_missing_gpa (tests.test_assessment.AssessmentTests.test_missing_gpa) ... ok
+test_missing_middle_period (tests.test_assessment.AssessmentTests.test_missing_middle_period) ... ok
+test_no_configuration (tests.test_assessment.AssessmentTests.test_no_configuration) ... ok
+test_no_future_leak (tests.test_assessment.AssessmentTests.test_no_future_leak) ... ok
+test_repeat_exact_window (tests.test_assessment.AssessmentTests.test_repeat_exact_window) ... ok
+test_rule_and_three_values (tests.test_assessment.AssessmentTests.test_rule_and_three_values) ... ok
+test_rule_or_unknown (tests.test_assessment.AssessmentTests.test_rule_or_unknown) ... ok
+test_simulation_immutable (tests.test_assessment.AssessmentTests.test_simulation_immutable) ... ok
+test_summer_excluded (tests.test_assessment.AssessmentTests.test_summer_excluded) ... ok
+test_threshold_order (tests.test_assessment.AssessmentTests.test_threshold_order) ... ok
+test_too_few_trend_periods (tests.test_assessment.AssessmentTests.test_too_few_trend_periods) ... ok
+test_unfinished_middle_semester_is_not_skipped (tests.test_assessment.AssessmentTests.test_unfinished_middle_semester_is_not_skipped) ... ok
+test_unordered_semesters (tests.test_assessment.AssessmentTests.test_unordered_semesters) ... ok
+test_unsafe_rule_rejected (tests.test_assessment.AssessmentTests.test_unsafe_rule_rejected) ... ok
+test_weights_must_sum_100 (tests.test_assessment.AssessmentTests.test_weights_must_sum_100) ... ok
+test_zero_denominators_rejected (tests.test_assessment.AssessmentTests.test_zero_denominators_rejected) ... ok
+test_zero_registered (tests.test_assessment.AssessmentTests.test_zero_registered) ... ok
+test_all_sixty_credit_histories_are_consistent (tests.test_demo_data.DemoDataTests.test_all_sixty_credit_histories_are_consistent) ... ok
+test_failed_and_repeat_examples (tests.test_demo_data.DemoDataTests.test_failed_and_repeat_examples) ... ok
+test_high_risk_without_rule_comes_from_real_seed_factory (tests.test_demo_data.DemoDataTests.test_high_risk_without_rule_comes_from_real_seed_factory) ... ok
+test_improved_example_has_comparable_completed_periods (tests.test_demo_data.DemoDataTests.test_improved_example_has_comparable_completed_periods) ... ok
+test_missing_demo_stays_missing (tests.test_demo_data.DemoDataTests.test_missing_demo_stays_missing) ... ok
+test_stable_demo_is_normal (tests.test_demo_data.DemoDataTests.test_stable_demo_is_normal) ... ok
+
+----------------------------------------------------------------------
+Ran 34 tests in 0.010s
+
+OK
+
+Exit code: 0
+
+$ C:\Program Files\nodejs\node.EXE --check static/portal.js
+
+Exit code: 0
+
+$ C:\Program Files\nodejs\node.EXE --test tests/frontend.test.cjs
+✔ student table escapes untrusted names and explains unknown separately (5.2588ms)
+✔ evaluation explanation names both outcomes, version and unsaved timestamp (1.0799ms)
+✔ intervention rendering preserves overdue and before/after comparisons safely (1.4007ms)
+✔ API sends CSRF and JSON and exposes field errors (3.1261ms)
+✔ dashboard forwards the same filters to summary and semester trend (29.2637ms)
+✔ empty intervention list and nested unknown rule have explicit states (0.8243ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 148.3252
+
+Exit code: 0

@@ -1,0 +1,3 @@
+# EduAlert interface
+
+Operate mode: bàn làm việc cho cố vấn trên laptop, dùng trong môi trường sáng. Giao diện tiếng Việt, nền xám xanh nhạt, sidebar xanh mực, màu chủ đạo teal; đỏ và hổ phách chỉ dùng cho nguy cơ. Typography Segoe UI hỗ trợ dấu tiếng Việt, số liệu tabular. Khoảng cách 4/8/12/16/24/32px, border radius 12px; panel viền mảnh, không bóng trang trí. Tiêu đề lớn rõ, bảng có hàng thoáng, nội dung ưu tiên hành động hỗ trợ. Biểu đồ SVG có nhãn và dữ liệu bảng đi kèm. Màn hình nhỏ chuyển sidebar thành navigation ngang, bảng cuộn riêng; form có nhãn thật, focus rõ. Dữ liệu mẫu được gắn nhãn xuyên suốt.

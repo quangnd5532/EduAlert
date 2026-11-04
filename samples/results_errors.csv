@@ -1,0 +1,4 @@
+﻿student_id,semester_id,gpa,cumulative_gpa,registered,passed,failed,accumulated,conduct,status
+009001,6,5,2.4,20,12,8,100,75,completed
+009001,5,2.3,2.4,20,20,8,100,75,completed
+NO_STUDENT,6,2,2.4,20,12,8,100,75,completed
