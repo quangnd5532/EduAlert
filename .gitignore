@@ -1,6 +1,7 @@
 .venv/
 .venv312/
 .venv313/
+.runtime/
 __pycache__/
 .pytest_cache/
 data/

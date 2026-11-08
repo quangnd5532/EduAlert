@@ -11,7 +11,7 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     role = Column(String, nullable=False)
     active = Column(Boolean, default=True, nullable=False)
-    __table_args__ = (CheckConstraint("role in ('admin','advisor')"),)
+    __table_args__ = (CheckConstraint("role in ('admin','advisor','student')", name='ck_users_role'),)
 class Major(Base):
     __tablename__ = 'majors'
     id = Column(String, primary_key=True)
@@ -56,6 +56,19 @@ class AcademicResult(Base):
     conduct = Column(Float)
     status = Column(String, default='completed', nullable=False)
     __table_args__ = (UniqueConstraint('student_id','semester_id'), CheckConstraint('registered >= 0 AND passed >= 0 AND failed >= 0 AND passed + failed = registered'), CheckConstraint('gpa IS NULL OR (gpa >= 0 AND gpa <= 4)'), CheckConstraint('cumulative_gpa IS NULL OR (cumulative_gpa >= 0 AND cumulative_gpa <= 4)'))
+class StudentAccount(Base):
+    __tablename__ = 'student_accounts'
+    user_id = Column(ForeignKey('users.id'), primary_key=True)
+    student_id = Column(ForeignKey('students.id'), nullable=False, unique=True)
+
+class CourseResult(Base):
+    __tablename__ = 'course_results'
+    id = Column(Integer, primary_key=True)
+    student_id = Column(ForeignKey('students.id'), nullable=False)
+    semester_id = Column(ForeignKey('semesters.id'), nullable=False)
+    course_id = Column(ForeignKey('courses.id'), nullable=False)
+    grade = Column(Float)
+    __table_args__ = (UniqueConstraint('student_id','semester_id','course_id'), CheckConstraint('grade IS NULL OR (grade >= 0 AND grade <= 4)',name='ck_course_grade'))
 class Course(Base):
     __tablename__ = 'courses'
     id = Column(String, primary_key=True)

@@ -10,9 +10,10 @@ from starlette.middleware.sessions import SessionMiddleware
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from .db import get_db
-from .models import User
+from .models import User, StudentAccount, CourseResult
 from .security import check_password,csrf_token,login_allowed,login_succeeded
 from .routers import api,pages
+from .routers import student
 from .services.data import audit
 
 secret=os.getenv('EDUALERT_SECRET')
@@ -23,7 +24,7 @@ if not secret:
     if not key.exists(): key.write_text(secrets.token_urlsafe(48),encoding='utf-8')
     secret=key.read_text(encoding='utf-8').strip()
 if len(secret)<32: raise RuntimeError('EDUALERT_SECRET cần tối thiểu 32 ký tự')
-app=FastAPI(title='EduAlert — Nhóm 5A',version='2.0.0',docs_url=None,redoc_url=None,description='Demo học vụ; dữ liệu giả lập; điểm hỗ trợ không phải xác suất.')
+app=FastAPI(title='EduAlert — Cổng hỗ trợ học tập',version='3.1.0',docs_url=None,redoc_url=None,description='Cổng sinh viên và cố vấn; dữ liệu giả lập; chỉ số ưu tiên hỗ trợ có giải thích.')
 @app.middleware('http')
 async def protection(request:Request,call_next):
     if request.method in ('POST','PUT','PATCH','DELETE'):
@@ -42,7 +43,7 @@ async def protection(request:Request,call_next):
 # SessionMiddleware outermost: session available to protection middleware.
 app.add_middleware(SessionMiddleware,secret_key=secret,session_cookie='edualert_session',https_only=https,same_site='lax',max_age=28800)
 app.mount('/static',StaticFiles(directory='static'),name='static')
-app.include_router(api.router);app.include_router(pages.router)
+app.include_router(api.router);app.include_router(pages.router);app.include_router(student.router)
 @app.exception_handler(HTTPException)
 async def http_error(request,exc):
     if exc.status_code==401 and not request.url.path.startswith('/api'): return RedirectResponse('/login',303)
@@ -60,6 +61,9 @@ async def login(request:Request,db=Depends(get_db)):
         raise HTTPException(422,'Tên đăng nhập hoặc mật khẩu vượt độ dài cho phép')
     login_allowed((request.client.host,username))
     u=db.scalar(select(User).where(User.username==username))
+    if u is None:
+        linked=db.scalar(select(StudentAccount).where(StudentAccount.student_id==username))
+        if linked: u=db.get(User,linked.user_id)
     if not u or not u.active or not check_password(u.password_hash,password):
         return pages.templates.TemplateResponse(request=request,name='login.html',context={'csrf':csrf_token(request),'error':'Tên đăng nhập hoặc mật khẩu không đúng.','demo':os.getenv('EDUALERT_DEMO')=='true'},status_code=400)
     login_succeeded((request.client.host,username))
@@ -68,7 +72,14 @@ async def login(request:Request,db=Depends(get_db)):
 @app.post('/logout',include_in_schema=False)
 def logout(request:Request): request.session.clear();return RedirectResponse('/login',303)
 @app.get('/health',tags=['System'])
-def health(): return {'status':'ok','version':'2.0.0'}
+def health(db=Depends(get_db)):
+    from sqlalchemy.exc import SQLAlchemyError
+    try:
+        db.execute(select(StudentAccount.user_id).limit(1))
+        db.execute(select(CourseResult.id).limit(1))
+    except SQLAlchemyError:
+        return JSONResponse({'status':'database_migration_required','application':'edualert','version':'3.1.0'},503)
+    return {'status':'ok','application':'edualert','version':'3.1.0'}
 @app.get('/docs',include_in_schema=False)
 def local_docs():
     return get_swagger_ui_html(openapi_url='/openapi.json',title='EduAlert API',swagger_js_url='/static/vendor/swagger-ui-bundle.js',swagger_css_url='/static/vendor/swagger-ui.css',swagger_favicon_url='/static/favicon.svg',swagger_ui_parameters={'tryItOutEnabled':True})

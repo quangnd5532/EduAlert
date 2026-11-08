@@ -10,7 +10,7 @@ if (-not $PythonExe) { throw 'Chạy start.ps1 để tạo môi trường, hoặ
 $eduPython = $PythonExe
 & $eduPython -m compileall -q app migrations scripts tests
 if ($LASTEXITCODE -ne 0) { throw 'Có lỗi cú pháp Python.' }
-& $eduPython -m unittest tests.test_assessment tests.test_demo_data -v
+& $eduPython -m unittest tests.test_assessment tests.test_demo_data tests.test_portal_data -v
 if ($LASTEXITCODE -ne 0) { throw 'Kiểm thử thuật toán thất bại.' }
 if (Get-Command node -ErrorAction SilentlyContinue) {
     node --check static/portal.js

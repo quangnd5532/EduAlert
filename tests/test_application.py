@@ -62,6 +62,8 @@ def test_simulation_cumulative_requires_explicit_assumptions(env):
     response=c.post('/api/students/000005/simulate?semester_id=6',json=scenario)
     assert response.status_code==200
     out=response.json();assert out['cumulative_gpa']==2.7257
+    cumulative_rule=next(c for c in out['after']['rule']['children'] if c.get('field')=='cumulative_gpa')
+    assert cumulative_rule['actual']==2.7257 and cumulative_rule['state']=='false'
     assert out['before']['config_id']==out['after']['config_id']
     assert out['after']['evaluated_at'] and out['after']['persisted'] is False
     assert before==(count(f,AcademicResult),count(f,Evaluation))
@@ -109,3 +111,111 @@ def test_seed_idempotent(env):
     c,f=env
     with f() as db:assert seed(db,'TestOnlyDemo!2026') is False
     assert count(f,Student)==60
+
+def test_student_portal_is_private_and_staff_writes_are_forbidden(env):
+    c,f=env;login(c,'student')
+    me=c.get('/api/me').json()
+    assert me['profile']['id']=='000005' and me['assessment']['score']==71.5
+    assert me['courses'] and all('notes' not in p for p in me['appointments'])
+    assert c.get('/api/me?student_id=000003').json()['profile']['id']=='000005'
+    for path in ['/api/students','/api/summary','/api/export','/api/interventions','/students','/admin','/reports']:
+        assert c.get(path).status_code==403,path
+    assert c.post('/api/interventions',json={'student_id':'000005','evaluation_id':1,'goal':'Test goal','action':'Test action','due_date':'2027-01-01'}).status_code==403
+    assert c.post('/api/students/000003/simulate?semester_id=6',json={'gpa':3,'registered':20,'failed':0}).status_code==404
+    exported=c.get('/api/me/export').content.decode('utf-8-sig')
+    assert '000005' in exported and '000003' not in exported
+    html=c.get('/dashboard').text
+    assert 'Không gian sinh viên' in html and 'Nhóm 5A' not in html
+
+def test_student_simulation_and_appointment(env):
+    from datetime import date,timedelta
+    c,f=env;login(c,'000005')
+    before=count(f,AcademicResult)
+    r=c.post('/api/me/simulate?semester_id=6',json={'gpa':3,'registered':20,'failed':0})
+    assert r.status_code==200 and r.json()['after']['score']==15
+    assert count(f,AcademicResult)==before
+    r=c.post('/api/me/appointments',json={'due_date':(date.today()+timedelta(days=7)).isoformat(),'message':'Em muốn trao đổi kế hoạch đăng ký học phần.'})
+    assert r.status_code==201
+    with f() as db:assert db.get(Intervention,r.json()['id']).student_id=='000005'
+
+def test_student_pages_are_distinct_server_rendered_documents(env):
+    import re
+    from html.parser import HTMLParser
+    class IDs(HTMLParser):
+        def __init__(self):super().__init__();self.values=[]
+        def handle_starttag(self,tag,attrs):
+            self.values.extend(value for name,value in attrs if name=='id')
+    c,f=env;login(c,'student')
+    pages={'overview':'Tổng quan','results':'Kết quả học tập','analysis':'Phân tích học tập',
+           'planning':'Kế hoạch học tập','appointments':'Cố vấn &amp; lịch hẹn','profile':'Thông tin sinh viên'}
+    for view,title in pages.items():
+        response=c.get('/student/'+view)
+        assert response.status_code==200,(view,response.text)
+        html=response.text
+        assert '<h1>'+title+'</h1>' in html
+        assert 'Nhóm 5A' not in html and '2351010170' not in html
+        assert ('id="my-simulation"' in html)==(view=='planning')
+        assert ('id="my-appointment-form"' in html)==(view=='appointments')
+        assert ('class="transcript"' in html)==(view=='results')
+        assert ('id="my-gpa"' in html)==(view=='overview')
+        assert ('id="semester-filter"' in html)==(view!='profile')
+        parser=IDs();parser.feed(html);assert len(parser.values)==len(set(parser.values)),view
+        assert '/student/results?semester_id=6' in html
+    assert c.get('/student/not-a-page').status_code==404
+    assert c.get('/dashboard',follow_redirects=False).headers['location']=='/student/overview'
+
+def test_transcript_filters_and_export_match_on_selected_semester(env):
+    import re
+    c,f=env;login(c,'student')
+    source=c.get('/api/me?semester_id=4').json()
+    course=source['courses'][0]
+    params={'semester_id':4,'q':course['name']}
+    response=c.get('/student/results',params=params)
+    assert response.status_code==200
+    transcript=re.search(r'<table class="transcript">(.*?)</table>',response.text,re.S).group(1)
+    assert course['id'] in transcript and 'Hiển thị 1 /' in response.text
+    assert '/student/analysis?semester_id=4' in response.text
+    exported=list(csv.reader(io.StringIO(c.get('/api/me/export',params=params).content.decode('utf-8-sig'))))
+    assert len(exported)==2 and exported[1][3]==course['id']
+    assert exported[1][2]==source['semester_name']
+    empty=c.get('/student/results',params={'q':'không có học phần này'})
+    assert empty.status_code==200 and 'Không có học phần phù hợp' in empty.text
+
+def test_student_pages_permissions_and_invalid_semesters(env):
+    c,f=env;login(c,'advisor1')
+    assert c.get('/student/results').status_code==403
+    login(c,'student')
+    assert c.get('/student/results?semester_id=7').status_code==422
+    assert c.get('/student/results?semester_id=999').status_code==404
+    assert c.get('/student/results?course_status=invalid').status_code==422
+    assert c.post('/api/me/simulate?semester_id=7',json={'gpa':3,'registered':20,'failed':0}).status_code==422
+
+def test_native_student_forms_work_without_javascript(env):
+    import re
+    from datetime import date,timedelta
+    c,f=env;token=login(c,'student');c.headers.pop('X-CSRF-Token')
+    html=c.get('/student/planning').text
+    assert re.search(r'<form[^>]+id="my-simulation"[^>]+method="post"',html)
+    before=count(f,AcademicResult)
+    response=c.post('/student/planning?semester_id=6',data={'csrf':token,'gpa':3,'registered':20,'failed':0,
+                   'previous_gpa_credits':120,'no_repeats':'on','all_registered_count':'on'})
+    assert response.status_code==200 and 'Đối chiếu kịch bản' in response.text and '2.73' in response.text
+    assert count(f,AcademicResult)==before
+    response=c.post('/student/appointments?semester_id=6',data={'csrf':token,
+                    'due_date':(date.today()+timedelta(days=7)).isoformat(),'message':'Em cần hỗ trợ kế hoạch học tập kỳ tiếp theo.'},follow_redirects=False)
+    assert response.status_code==303
+    assert 'sent=' in response.headers['location'] and 'message' not in response.headers['location']
+    page=c.get(response.headers['location']);assert 'Em cần hỗ trợ kế hoạch học tập kỳ tiếp theo.' in page.text
+    assert c.post('/student/appointments',data={'due_date':'2027-01-01','message':'Không có mã CSRF'}).status_code==403
+    for padded in ['          ','  short   ']:
+        assert c.post('/student/appointments',data={'csrf':token,'due_date':'2027-01-01','message':padded}).status_code==422
+
+def test_summer_result_keeps_its_name_in_history(env):
+    c,f=env;login(c,'student')
+    with f() as db:
+        db.add(Semester(id=8,name='HK1 · 2026–2027',sequence=8,kind='regular',completed=True))
+        db.add(AcademicResult(student_id='000005',semester_id=7,gpa=3,cumulative_gpa=2.7,registered=3,passed=3,failed=0,accumulated=109,status='completed'))
+        db.commit()
+    response=c.get('/student/results?semester_id=8')
+    assert response.status_code==200
+    assert '<td>Hè 2026 (không tính xu hướng)</td>' in response.text

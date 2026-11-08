@@ -2,7 +2,7 @@ from fastapi import APIRouter,Depends,Request,HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
-from ..security import current_user,admin,student_access,csrf_token
+from ..security import current_user,staff,admin,student_access,csrf_token
 from ..db import get_db
 from ..models import *
 from ..services.data import asdict
@@ -23,19 +23,23 @@ def render(request,page,title,user,db,student_id=None):
 @router.get('/')
 def home(): return RedirectResponse('/dashboard',303)
 @router.get('/dashboard')
-def dashboard(request:Request,user=Depends(current_user),db=Depends(get_db)): return render(request,'dashboard','Tổng quan học tập',user,db)
+def dashboard(request:Request,user=Depends(current_user),db=Depends(get_db)):
+    if user.role=='student':
+        from .student import portal_page
+        return portal_page(request,user,db)
+    return render(request,'dashboard','Tổng quan học tập',user,db)
 @router.get('/students')
-def students(request:Request,user=Depends(current_user),db=Depends(get_db)): return render(request,'students','Danh sách sinh viên',user,db)
+def students(request:Request,user=Depends(staff),db=Depends(get_db)): return render(request,'students','Danh sách sinh viên',user,db)
 @router.get('/students/{sid}')
-def detail(sid:str,request:Request,user=Depends(current_user),db=Depends(get_db)):
+def detail(sid:str,request:Request,user=Depends(staff),db=Depends(get_db)):
     s=student_access(db,user,sid);return render(request,'detail',s.name,user,db,sid)
 @router.get('/import')
 def imports(request:Request,user=Depends(admin),db=Depends(get_db)): return render(request,'import','Nhập và kiểm tra CSV',user,db)
 @router.get('/settings')
 def settings(request:Request,user=Depends(admin),db=Depends(get_db)): return render(request,'settings','Cấu hình đánh giá',user,db)
 @router.get('/interventions')
-def interventions(request:Request,user=Depends(current_user),db=Depends(get_db)): return render(request,'interventions','Can thiệp & lịch hẹn',user,db)
+def interventions(request:Request,user=Depends(staff),db=Depends(get_db)): return render(request,'interventions','Can thiệp & lịch hẹn',user,db)
 @router.get('/reports')
-def reports(request:Request,user=Depends(current_user),db=Depends(get_db)): return render(request,'reports','Báo cáo & thống kê',user,db)
+def reports(request:Request,user=Depends(staff),db=Depends(get_db)): return render(request,'reports','Báo cáo & thống kê',user,db)
 @router.get('/admin')
 def administration(request:Request,user=Depends(admin),db=Depends(get_db)): return render(request,'admin','Quản trị hệ thống',user,db)

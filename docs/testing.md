@@ -1,5 +1,29 @@
 # Báo cáo kiểm thử thực tế và checklist
 
+## Kết quả hiện tại — 09/11/2026, bản3.1.0
+
+Đã chạy `./.venv312/Scripts/python.exe scripts/check_release.py` trên Python3.12. Nhật ký đầy đủ: [release-checks.txt](release-checks.txt).
+
+| Kiểm tra đã chạy | Kết quả quan sát |
+|---|---|
+| Compile Python | Thành công |
+| Toàn bộ pytest: công thức, DB/API, quyền, CSV, phiên bản, can thiệp, dữ liệu và cổng sinh viên | **61 passed** trong44,74giây |
+| `node --check static/student.js` | Thành công |
+| `node --test tests/frontend.test.cjs` | **6 passed**,0fail |
+| `start.ps1 -Demo`, migration/nâng cấp dữ liệu và Uvicorn | Server3.1.0 khởi động tại127.0.0.1:8001 |
+| HTTP `/health`, `/login`, CSS/JS sinh viên, CSS đăng nhập, Chart.js local |200; health trả version3.1.0 |
+| GET `/student/results` khi chưa đăng nhập |303 về đăng nhập |
+
+Pytest còn **1 DeprecationWarning** từ Starlette TestClient sử dụng alias `anyio.abc.BlockingPortal`. Đây là cảnh báo thư viện trong test, không phải lỗi làm server ngừng chạy; không tắt cảnh báo để che kết quả.
+
+Các test cổng sinh viên kiểm6trang riêng, điều hướng giữ học kỳ, HTML có dữ liệu sẵn, biểu mẫu chỉ xuất hiện ở trang đúng chức năng, POST có CSRF khi không có JavaScript, yêu cầu tư vấn lưu thật, lọc bảng điểm và CSV khớp, chặn quyền, mô phỏng không ghi dữ liệu thật, tên kỳ hè và đối soát GPA từng học phần. Mô phỏng kiểm cả giá trị GPA tích lũy giả định trong điều kiện quy tắc.
+
+**Chưa xác minh trực quan:** công cụ trình duyệt trả lỗi **“The browser access host is unavailable”** trong lần kiểm tra09/11. Chưa có bằng chứng đủ để kết luận luồng click qua trình duyệt, render Chart.js, layout laptop/điện thoại và debugger F5 đã đạt. Kiểm tra HTML/API/Node không thay thế các thao tác đó. Checklist bên dưới vẫn dùng cho kiểm tra thủ công. Cài trên một máy Windows sạch khác và triển khai HTTPS chưa được chạy thử.
+
+## Lịch sử kiểm tra ban đầu — 02–03/11/2026
+
+Phần dưới được giữ làm lịch sử tại thời điểm chưa có môi trường chạy; các dòng “chưa chạy” trong phần lịch sử không mô tả trạng thái3.1.0 ở trên.
+
 Ngày thực hiện: **02–03/11/2026**, môi trường Windows PowerShell tại thư mục EduAlert. Python đang có: **3.15.2**; virtualenv chỉ có pip. Lần tiếp tục ngày03/11 có Node **26.13.0** để kiểm thử JavaScript. Bộ ứng dụng khuyến nghị Python3.12/3.13.
 
 ## Đã thực sự chạy

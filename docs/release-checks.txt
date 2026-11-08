@@ -1,0 +1,41 @@
+EduAlert 3.1 verification: 2026-11-08T17:01:56.656062+00:00
+Python: 3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]
+Scope: Python integration/unit tests and JavaScript unit/syntax checks. Browser visual checks are separate.
+
+$ C:\Users\Quang\Documents\EduAlert\.venv312\Scripts\python.exe -m compileall -q app migrations scripts tests
+
+Exit code: 0
+
+$ C:\Users\Quang\Documents\EduAlert\.venv312\Scripts\python.exe -m pytest -q
+.............................................................            [100%]
+============================== warnings summary ===============================
+.venv312\Lib\site-packages\starlette\testclient.py:37
+  C:\Users\Quang\Documents\EduAlert\.venv312\Lib\site-packages\starlette\testclient.py:37: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = typing.Callable[[], typing.ContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+61 passed, 1 warning in 44.74s
+
+Exit code: 0
+
+$ C:\Program Files\nodejs\node.EXE --check static/student.js
+
+Exit code: 0
+
+$ C:\Program Files\nodejs\node.EXE --test tests/frontend.test.cjs
+✔ student table escapes untrusted names and explains unknown separately (3.113ms)
+✔ evaluation explanation names both outcomes, version and unsaved timestamp (0.8149ms)
+✔ intervention rendering preserves overdue and before/after comparisons safely (0.8174ms)
+✔ API sends CSRF and JSON and exposes field errors (2.0515ms)
+✔ dashboard forwards the same filters to summary and semester trend (14.8623ms)
+✔ empty intervention list and nested unknown rule have explicit states (0.869ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 95.3309
+
+Exit code: 0

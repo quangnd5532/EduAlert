@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$PythonExe = '',
-    [ValidateRange(1024, 65535)][int]$Port = 8000,
+    [ValidateRange(1024, 65535)][int]$Port = 8001,
     [switch]$Demo
 )
 
@@ -46,6 +46,7 @@ function Find-EduPython {
         }
     }
     foreach ($eduCandidate in @(
+        (Join-Path $PSScriptRoot '.runtime/python312/python.exe'),
         (Join-Path $PSScriptRoot '.venv312/Scripts/python.exe'),
         (Join-Path $PSScriptRoot '.venv313/Scripts/python.exe'),
         (Join-Path $PSScriptRoot '.venv/Scripts/python.exe')
@@ -63,6 +64,13 @@ function Find-EduPython {
 }
 
 try {
+    try {
+        $eduRunning = Invoke-RestMethod -Uri "http://127.0.0.1:$Port/health" -TimeoutSec 2
+        if ($eduRunning.application -eq 'edualert' -and $eduRunning.version -eq '3.1.0' -and $eduRunning.status -eq 'ok') {
+            Write-Host "EduAlert da san sang. Uvicorn running on http://127.0.0.1:$Port"
+            exit 0
+        }
+    } catch { }
     if (-not $PythonExe) { $PythonExe = Find-EduPython }
     if (-not $PythonExe) {
         throw @'
@@ -133,7 +141,7 @@ Neu Python duoc cai o vi tri rieng: .\start.ps1 -PythonExe 'C:\duong-dan\python.
     Write-Host "EDUALERT_STARTING"
     Write-Host "Dia chi: http://127.0.0.1:$Port - chi mo sau khi co 'Uvicorn running on'. Ctrl+C de dung."
     & $eduPython -m uvicorn app.main:app --host 127.0.0.1 --port $Port
-    if ($LASTEXITCODE -ne 0) { throw "Uvicorn khong khoi dong duoc. Neu cong $Port dang ban, chay lai voi -Port 8001." }
+    if ($LASTEXITCODE -ne 0) { throw "Uvicorn khong khoi dong duoc. Neu cong $Port dang ban, chon cong trong bang tham so -Port." }
 } catch {
     Write-Host ("EDUALERT_ERROR: " + $_.Exception.Message) -ForegroundColor Red
     exit 1

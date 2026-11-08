@@ -9,32 +9,32 @@ from pydantic import BaseModel,Field
 from ..db import get_db
 from ..models import *
 from ..schemas import *
-from ..security import current_user,admin,student_access,hasher
+from ..security import current_user,staff,admin,student_access,hasher
 from ..services.data import asdict,filtered,summary,assessment,inputs,select_config,audit,debt_list
 from ..services.assessment import simulate,DEFAULT
 from ..services.csv_import import parse_file,validate_rows,apply_rows,csv_bytes,HEADERS
 router=APIRouter(prefix='/api',tags=['EduAlert'])
 
 @router.get('/students')
-def students(request:Request,user=Depends(current_user),db=Depends(get_db)):
+def students(request:Request,user=Depends(staff),db=Depends(get_db)):
     items,sid=filtered(db,user,request.query_params)
     try: page=max(1,min(int(request.query_params.get('page',1)),10000))
     except ValueError: raise HTTPException(422,'Số trang không hợp lệ')
     size=12
     return {'items':items[(page-1)*size:page*size],'total':len(items),'page':page,'pages':max(1,(len(items)+size-1)//size),'semester_id':sid}
 @router.get('/summary')
-def dashboard(request:Request,user=Depends(current_user),db=Depends(get_db)):
+def dashboard(request:Request,user=Depends(staff),db=Depends(get_db)):
     return summary(db,user,request.query_params)
 @router.get('/trend')
-def trend(request:Request,user=Depends(current_user),db=Depends(get_db)):
+def trend(request:Request,semester_id:int|None=None,user=Depends(staff),db=Depends(get_db)):
     params=dict(request.query_params);items=[]
-    max_id=params.get('semester_id');chosen=db.get(Semester,int(max_id)) if max_id else None
+    chosen=db.get(Semester,semester_id) if semester_id else None
     for term in db.scalars(select(Semester).where(Semester.completed==True,Semester.kind=='regular').order_by(Semester.sequence)):
         if chosen and term.sequence>chosen.sequence: continue
         s=summary(db,user,{**params,'semester_id':term.id});items.append({'name':term.name,**s['levels']})
     return items
 @router.get('/report-groups')
-def report_groups(request:Request,user=Depends(current_user),db=Depends(get_db)):
+def report_groups(request:Request,user=Depends(staff),db=Depends(get_db)):
     items,sid=filtered(db,user,request.query_params);out={}
     for key in ('class_id','major_id','cohort_id'):
         groups={}
@@ -44,7 +44,7 @@ def report_groups(request:Request,user=Depends(current_user),db=Depends(get_db))
         out[key]=groups
     return out
 @router.get('/students/{sid}')
-def detail(sid:str,semester_id:int|None=None,user=Depends(current_user),db=Depends(get_db)):
+def detail(sid:str,semester_id:int|None=None,user=Depends(staff),db=Depends(get_db)):
     s=student_access(db,user,sid);periods,results,warnings=inputs(db,sid)
     term=db.get(Semester,semester_id) if semester_id else db.scalars(select(Semester).where(Semester.kind=='regular',Semester.completed==True).order_by(Semester.sequence.desc())).first()
     if not term: raise HTTPException(404,'Học kỳ không tồn tại')
@@ -61,7 +61,7 @@ def detail(sid:str,semester_id:int|None=None,user=Depends(current_user),db=Depen
             'debts':debt_list(db,sid,term.id),'interventions':[plan_dict(db,p) for p in plans],'history':history,'chart':chart,'semester_id':term.id,
             'suggestion':'Rà soát môn nợ; trao đổi kế hoạch đăng ký' if debt_list(db,sid,term.id) else 'Lập lịch học và hẹn tư vấn định kỳ'}
 @router.post('/students/{sid}/evaluate')
-def save_evaluation(sid:str,semester_id:int,user=Depends(current_user),db=Depends(get_db)):
+def save_evaluation(sid:str,semester_id:int,user=Depends(staff),db=Depends(get_db)):
     s=student_access(db,user,sid)
     if not db.get(Semester,semester_id): raise HTTPException(404,'Học kỳ không tồn tại')
     out=assessment(db,s,semester_id,save=True);audit(db,user,'evaluate',{'student_id':sid,'evaluation_id':out['evaluation_id']});db.commit();return out
@@ -71,8 +71,6 @@ def simulation(sid:str,data:SimulationInput,semester_id:int,user=Depends(current
     if not term: raise HTTPException(404,'Không tìm thấy kỳ học')
     periods,results,warnings=inputs(db,sid);config=select_config(db,s)
     scenario={k:getattr(data,k) for k in ('gpa','registered','failed')}
-    result=simulate(periods,results,warnings,term.sequence,scenario,config.payload if config else None)
-    result.update(config_id=config.id if config else None,config_name=config.name if config else 'Chưa có cấu hình áp dụng',evaluated_at=now().isoformat(),persisted=False)
     before=assessment(db,s,semester_id,config,True);current=next((r for r in results if r['sequence']==term.sequence),{})
     cumulative=None
     note='Chưa tính GPA tích lũy: cần GPA tích lũy hiện có, số tín chỉ đã tính GPA, xác nhận không học lại và mọi tín chỉ đăng ký đều tính GPA.'
@@ -80,6 +78,9 @@ def simulation(sid:str,data:SimulationInput,semester_id:int,user=Depends(current
         credits=data.previous_gpa_credits
         cumulative=round((current['cumulative_gpa']*credits+data.gpa*data.registered)/(credits+data.registered),4)
         note=f"({current['cumulative_gpa']} × {credits} + {data.gpa} × {data.registered}) / ({credits} + {data.registered}). Giả định không học lại; toàn bộ tín chỉ đăng ký tính GPA, kể cả không đạt. Số tín chỉ tính GPA do người dùng cung cấp; không dùng tổng tín chỉ tích lũy thay thế."
+    scenario['cumulative_gpa']=cumulative
+    result=simulate(periods,results,warnings,term.sequence,scenario,config.payload if config else None)
+    result.update(config_id=config.id if config else None,config_name=config.name if config else 'Chưa có cấu hình áp dụng',evaluated_at=now().isoformat(),persisted=False)
     return {'before':before,'after':result,'cumulative_gpa':cumulative,'cumulative_note':note,'notice':'Kịch bản giả định, không phải dự đoán chắc chắn. Không lưu vào dữ liệu thật.'}
 @router.post('/students',status_code=201)
 def create_student(data:StudentInput,user=Depends(admin),db=Depends(get_db)):
@@ -110,15 +111,15 @@ def plan_dict(db,p):
             'overdue':p.status!='Hoàn tất' and p.due_date<date.today(),
             'notes':[asdict(n) for n in db.scalars(select(Followup).where(Followup.intervention_id==p.id).order_by(Followup.id))]}
 @router.get('/interventions')
-def plans(user=Depends(current_user),db=Depends(get_db)):
+def plans(user=Depends(staff),db=Depends(get_db)):
     return [plan_dict(db,p) for p in db.scalars(select(Intervention).order_by(Intervention.id.desc())) if user.role=='admin' or db.get(Student,p.student_id).advisor_id==user.id]
 @router.post('/interventions',status_code=201)
-def create_plan(data:InterventionInput,user=Depends(current_user),db=Depends(get_db)):
+def create_plan(data:InterventionInput,user=Depends(staff),db=Depends(get_db)):
     s=student_access(db,user,data.student_id);e=db.get(Evaluation,data.evaluation_id)
     if not e or e.student_id!=s.id: raise HTTPException(422,'Đánh giá không thuộc sinh viên')
     p=Intervention(**data.model_dump(),owner_id=s.advisor_id);db.add(p);db.flush();audit(db,user,'create_intervention',{'id':p.id});db.commit();return plan_dict(db,p)
 @router.patch('/interventions/{pid}')
-def update_plan(pid:int,data:InterventionUpdate,user=Depends(current_user),db=Depends(get_db)):
+def update_plan(pid:int,data:InterventionUpdate,user=Depends(staff),db=Depends(get_db)):
     p=db.get(Intervention,pid)
     if not p: raise HTTPException(404,'Không tìm thấy hồ sơ')
     student_access(db,user,p.student_id)
@@ -128,7 +129,7 @@ def update_plan(pid:int,data:InterventionUpdate,user=Depends(current_user),db=De
     if data.note.strip(): db.add(Followup(intervention_id=pid,author_id=user.id,note=data.note.strip()))
     audit(db,user,'update_intervention',{'id':pid,'status':data.status});db.commit();return plan_dict(db,p)
 @router.get('/export')
-def export(request:Request,user=Depends(current_user),db=Depends(get_db)):
+def export(request:Request,user=Depends(staff),db=Depends(get_db)):
     items,sid=filtered(db,user,request.query_params)
     audit(db,user,'export',{'filters':dict(request.query_params),'count':len(items)});db.commit()
     return Response(csv_bytes(['Mã sinh viên','Họ tên','Lớp','Ngành','Khóa','Kỳ','Điểm hỗ trợ /100','Mức nguy cơ','Kết quả quy tắc','Phiên bản','Can thiệp'],

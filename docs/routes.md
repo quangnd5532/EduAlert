@@ -8,7 +8,7 @@ FastAPI docs: `/docs`, OpenAPI JSON: `/openapi.json`. Schema input lấy từ Py
 |---|---|---|
 | GET/POST | /login | Khách; POST cần CSRF phiên login |
 | POST | /logout | Có CSRF; xóa session |
-| GET | /dashboard | Admin / cố vấn trong phạm vi |
+| GET | /dashboard | Admin / cố vấn trong phạm vi; sinh viên chuyển303 tới /student/overview |
 | GET | /students | Admin / cố vấn trong phạm vi |
 | GET | /students/{sid} | Kiểm tra phân công, ngoài quyền trả404 |
 | GET | /import | Admin |
@@ -17,6 +17,14 @@ FastAPI docs: `/docs`, OpenAPI JSON: `/openapi.json`. Schema input lấy từ Py
 | GET | /reports | Admin / cố vấn trong phạm vi |
 | GET | /admin | Admin |
 | GET | / | Chuyển tới dashboard |
+| GET | /student/overview | Sinh viên: tổng quan cá nhân |
+| GET | /student/results | Sinh viên: bảng điểm, lọc q/course_status, CSV |
+| GET | /student/analysis | Sinh viên: hai kết quả A/B và giải thích |
+| GET/POST | /student/planning | Sinh viên: mô phỏng riêng, POST có CSRF; không ghi dữ liệu học tập |
+| GET/POST | /student/appointments | Sinh viên: xem/gửi đề nghị tư vấn, POST có CSRF và lưu DB |
+| GET | /student/profile | Sinh viên: thông tin cá nhân |
+
+Sáu trang sinh viên dùng danh tính từ session; không nhận mã sinh viên để truy cập hồ sơ khác. Các trang học tập nhận `semester_id` của học kỳ chính đã hoàn thành. Menu giữ học kỳ đã chọn. POST HTML giúp biểu mẫu vẫn hoạt động khi tắt JavaScript; bình thường JavaScript gọi API JSON tương ứng.
 
 ## JSON / CSV
 
@@ -24,7 +32,11 @@ Mọi thao tác thay đổi cần header `X-CSRF-Token` lấy từ meta csrf-tok
 
 | Method | Endpoint | Dữ liệu / chức năng | Quyền |
 |---|---|---|---|
-| GET | /health | Version và process alive (không xác nhận DB) | Public |
+| GET | /health | Version và kiểm tra DB có bảng student_accounts/course_results | Public |
+| GET | /api/me | Hồ sơ cá nhân, kết quả, đánh giá và học phần; không trả ghi chú nội bộ | Chỉ sinh viên, lấy ID từ session |
+| GET | /api/me/export | CSV bảng điểm cá nhân, cùng semester_id/q/course_status với trang kết quả | Chỉ sinh viên |
+| POST | /api/me/simulate | Mô phỏng theo dữ liệu của chính sinh viên, không ghi DB | Sinh viên + CSRF |
+| POST | /api/me/appointments | Ngày hẹn/nội dung đề nghị, tạo hồ sơ hỗ trợ thực | Sinh viên + CSRF |
 | GET | /api/students | items, total, page, pages, semester_id | Scoped |
 | POST | /api/students | StudentInput; tạo mới | Admin |
 | PUT | /api/students/{sid} | StudentInput; cập nhật hồ sơ/phân công, giữ mã | Admin |

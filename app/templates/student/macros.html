@@ -1,0 +1,26 @@
+{% macro icon(name) -%}
+<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+{% if name=='overview' %}<path d="m3 11 9-8 9 8M5 10v11h14V10M9 21v-8h6v8"/>
+{% elif name=='results' %}<path d="M5 3h11l3 3v15H5ZM8 8h7M8 12h8M8 16h8"/>
+{% elif name=='analysis' %}<path d="M4 3v17h17M8 16v-4M13 16V8M18 16V5"/>
+{% elif name=='planning' %}<rect x="4" y="4" width="16" height="17" rx="2"/><path d="M8 2v4M16 2v4M4 9h16m-12 5 3 3 5-5"/>
+{% elif name=='appointments' %}<path d="M4 4h16v12H9l-5 4ZM8 8h8M8 12h5"/>
+{% elif name=='profile' %}<circle cx="12" cy="8" r="4"/><path d="M4 21v-3a8 8 0 0 1 16 0v3"/>
+{% elif name=='logout' %}<path d="M9 4H4v16h5m6-13 5 5-5 5M9 12h11"/>
+{% elif name=='menu' %}<path d="M4 6h16M4 12h16M4 18h16"/>
+{% elif name=='arrow' %}<path d="M4 12h16m-6-6 6 6-6 6"/>
+{% elif name=='download' %}<path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/>
+{% elif name=='check' %}<circle cx="12" cy="12" r="9"/><path d="m7 12 3 3 7-7"/>
+{% endif %}</svg>
+{%- endmacro %}
+{% macro nav_links(pages,view,semester) -%}
+<span class="nav-group">Học tập</span>
+{% for key in ['overview','results','analysis','planning'] %}<a href="/student/{{key}}?semester_id={{semester}}" {% if key==view %}aria-current="page"{% endif %}>{{icon(key)}}<span>{{pages[key][0]}}</span></a>{% endfor %}
+<span class="nav-group">Hỗ trợ & hồ sơ</span>
+{% for key in ['appointments','profile'] %}<a href="/student/{{key}}?semester_id={{semester}}" {% if key==view %}aria-current="page"{% endif %}>{{icon(key)}}<span>{{pages[key][0]}}</span></a>{% endfor %}
+{%- endmacro %}
+{% macro risk_label(level) -%}<span class="badge {{'high' if level=='Nguy cơ cao' else 'attention' if level=='Cần chú ý' else 'normal' if level=='Bình thường' else 'missing'}}">{{level}}</span>{%- endmacro %}
+{% macro rule_tree(r) -%}
+{% if r.children is defined %}<div class="rule-group"><p><b>{{'Thỏa ít nhất một điều kiện' if r.op=='OR' else 'Thỏa tất cả điều kiện'}}</b><span class="badge {{'attention' if r.state=='true' else 'normal' if r.state=='false' else 'missing'}}">{{{'true':'Thỏa','false':'Không thỏa','unknown':'Chưa đủ dữ liệu'}[r.state]}}</span></p><ul>{% for child in r.children %}<li>{{rule_tree(child)}}</li>{% endfor %}</ul></div>
+{% else %}<div class="condition"><b>{{{'gpa':'GPA học kỳ','cumulative_gpa':'GPA tích lũy','failed_ratio':'Tỷ lệ tín chỉ không đạt','conduct':'Điểm rèn luyện'}.get(r.field,r.field)}} {{{'lt':'<','le':'≤','gt':'>','ge':'≥','eq':'='}[r.op]}} {{r.value}}</b><span>Thực tế: {{r.actual|grade}} · {{{'true':'Thỏa điều kiện','false':'Không thỏa','unknown':'Chưa có dữ liệu'}[r.state]}}</span></div>{% endif %}
+{%- endmacro %}

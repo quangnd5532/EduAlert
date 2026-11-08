@@ -20,7 +20,7 @@
 </svg>
 </a>
 <div class="workspace">Không gian cố vấn<br>
-<small>Hỗ trợ học tập · Demo</small>
+<small>Theo dõi và đồng hành</small>
 </div>
 <nav aria-label="Điều hướng chính">{% for url,label,key in nav %}{% if user.role=='admin' or key not in ['admin','import','settings'] %}<a href="{{url}}" {% if page==key or (page=='detail' and key=='students') %}aria-current="page"{% endif %}>
 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -30,10 +30,7 @@
 <div class="side-note">
 <strong>Mỗi cảnh báo là một cơ hội hỗ trợ.</strong>
 <p>Chỉ số nguy cơ giúp ưu tiên nguồn lực; không phải xác suất trượt hoặc bỏ học.</p>
-<details>
-<summary>Nhóm 5A</summary>
-<p>Nguyễn Duy Quang — 2351010170<br>Nguyễn Khánh Hưng — 2151010146<br>Lê Hà Tấn Phong — 2451012074</p>
-</details>
+
 </div>
 </aside>
 <div class="shell">
@@ -54,9 +51,9 @@
 <div class="page-heading">
 <div>
 <h1>{{title}}</h1>
-<p>{% if page=='dashboard' %}Theo dõi diễn biến, nhận diện ưu tiên và kết nối hỗ trợ.{% elif page=='students' %}Hai kết quả đánh giá độc lập, một góc nhìn đầy đủ hơn.{% elif page=='detail' %}Hồ sơ giả lập · Đồng hành qua từng học kỳ.{% else %}EduAlert · Dữ liệu giả lập phục vụ bài thi giữa kỳ.{% endif %}</p>
+<p>{% if page=='dashboard' %}Theo dõi diễn biến, nhận diện ưu tiên và kết nối hỗ trợ.{% elif page=='students' %}Hai kết quả đánh giá độc lập, một góc nhìn đầy đủ hơn.{% elif page=='detail' %}Đồng hành qua từng học kỳ.{% else %}Cổng hỗ trợ và quản lý kết quả học tập.{% endif %}</p>
 </div>
-<span class="demo-label">Dữ liệu demo</span>
+<span class="demo-label">Dữ liệu trải nghiệm</span>
 </div>
 <div id="feedback" role="status" aria-live="polite">
 </div>
@@ -415,7 +412,7 @@
 <p class="notice error">Bật JavaScript để thao tác bảng, biểu đồ và biểu mẫu nghiệp vụ.</p>
 </noscript>
 </main>
-<footer>EduAlert · Nhóm 5A <span>Bộ quy tắc minh họa phục vụ demo · Dữ liệu giả lập</span>
+<footer>EduAlert · Cổng hỗ trợ học tập <span>Bộ quy tắc minh họa phục vụ demo · Dữ liệu giả lập</span>
 </footer>
 </div>
 <script type="application/json" id="catalog-data">{{catalogs|tojson}}</script>

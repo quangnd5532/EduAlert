@@ -14,7 +14,7 @@
                 "background": {
                     "activeOnStart": true,
                     "beginsPattern": "^EDUALERT_STARTING$",
-                    "endsPattern": "Uvicorn running on http://127[.]0[.]0[.]1:8000"
+                    "endsPattern": "Uvicorn running on http://127[.]0[.]0[.]1:8001"
                 }
             },
             "presentation": {"reveal": "always", "panel": "dedicated", "clear": false},

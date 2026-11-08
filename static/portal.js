@@ -6,13 +6,13 @@ const catalogs=JSON.parse($('#catalog-data').textContent), charts={}, csrf=$('me
 let detailData=null, currentPage=1, board=false, importId=null;
 const statuses=['Chưa xử lý','Đang hỗ trợ','Chờ theo dõi','Hoàn tất'];
 const levels=['Bình thường','Cần chú ý','Nguy cơ cao','Chưa đủ dữ liệu'];
-const colors=['#389a7b','#d3972e','#cd5369','#8f9eb4'];
+const colors=['#36856b','#b47b1e','#c54f65','#8d9bb2'];
 function feedback(message,error=false){const el=$('#feedback');el.className='notice '+(error?'error':'success');el.textContent=message;el.scrollIntoView({block:'nearest',behavior:'smooth'});}
 async function api(url,options={}){
  const headers={'X-CSRF-Token':csrf,...options.headers};
  if(options.body && !(options.body instanceof FormData)){headers['Content-Type']='application/json';options.body=JSON.stringify(options.body);}
  const r=await fetch(url,{...options,headers}); let result;try{result=await r.json();}catch{throw Error('Máy chủ trả về dữ liệu không hợp lệ.');}
- if(!r.ok){const d=result.detail;if(Array.isArray(d))throw Object.assign(Error(d.map(x=>(x.loc?.join('.')||x.column||'Dòng '+x.line)+': '+(x.msg||x.message)).join('\n')),{issues:d});throw Error(typeof d==='string'?d:JSON.stringify(d));}
+ if(!r.ok){if(r.status===401&&window.location)window.location.assign('/login');const d=result.detail;if(Array.isArray(d))throw Object.assign(Error(d.map(x=>(x.loc?.join('.')||x.column||'Dòng '+x.line)+': '+(x.msg||x.message)).join('\n')),{issues:d});throw Error(typeof d==='string'?d:JSON.stringify(d));}
  return result;
 }
 function formData(form){return Object.fromEntries(new FormData(form));}
@@ -20,7 +20,7 @@ function numbers(o,keys){for(const k of keys)if(k in o)o[k]=o[k]===''?null:Numbe
 function onForm(id,handler){const form=$(id);if(!form)return;form.addEventListener('submit',async e=>{e.preventDefault();$$('.inline-error',form).forEach(x=>x.remove());const b=$('button[type="submit"],button:not([type])',form);if(b)b.disabled=true;try{await handler(form);}catch(err){feedback(err.message,true);for(const issue of err.issues||[]){const key=issue.loc?.at(-1)||issue.column;const el=form.elements.namedItem(key);if(el){const msg=document.createElement('span');msg.className='inline-error';msg.textContent=issue.msg||issue.message;el.after(msg);el.setAttribute('aria-invalid','true');}}}finally{if(b)b.disabled=false;}});}
 function badge(level){return `<span class="badge ${['normal','attention','high','missing'][levels.indexOf(level)]||'missing'}">${esc(level)}</span>`;}
 function table(headers,rows){return `<div class="table-wrap"><table><thead><tr>${headers.map(h=>`<th scope="col">${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.length?rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${headers.length}" class="empty">Không có dữ liệu phù hợp.</td></tr>`}</tbody></table></div>`;}
-function studentTable(items){return table(['Sinh viên','Lớp / khóa','Ưu tiên hỗ trợ /100','Kiểm tra quy tắc','Lý do / dữ liệu cần bổ sung'],items.map(s=>[ `<a href="/students/${encodeURIComponent(s.id)}"><strong>${esc(s.name)}</strong></a><small>${esc(s.id)}</small>`,`${esc(s.class_id)}<small>${esc(s.cohort_id)}</small>`,`<span class="score">${s.assessment.score==null?'—':s.assessment.score.toFixed(1)}</span> ${badge(s.assessment.level)}`,esc(s.assessment.rule_label),esc(s.assessment.missing.length?s.assessment.missing[0]:s.assessment.factors.slice().sort((a,b)=>b.contribution-a.contribution)[0]?.reason)]));}
+function studentTable(items){return table(['Sinh viên','Lớp / khóa','Ưu tiên hỗ trợ /100','Kiểm tra quy tắc','Lý do / dữ liệu cần bổ sung'],items.map(s=>[ `<a href="/students/${encodeURIComponent(s.id)}"><strong>${esc(s.name)}</strong></a><small>${esc(s.id)}</small>`,`${esc(s.class_name||s.class_id)}<small>${esc(s.cohort_id)}</small>`,`<span class="score">${s.assessment.score==null?'—':s.assessment.score.toFixed(1)}</span> ${badge(s.assessment.level)}`,esc(s.assessment.rule_label),esc(s.assessment.missing.length?s.assessment.missing[0]:s.assessment.factors.slice().sort((a,b)=>b.contribution-a.contribution)[0]?.reason)]));}
 function filterParams(){return new URLSearchParams($('#filters')?new FormData($('#filters')):undefined);}
 function chart(id,type,data,options={}){const el=$('#'+id);if(!el)return;if(charts[id])charts[id].destroy();if(!window.Chart){el.closest('.chart-wrap').innerHTML='<p class="notice">Chưa cài Chart.js cục bộ. Xem bảng dữ liệu tương ứng bên dưới; chạy scripts/vendor_assets.py khi có mạng.</p>';return;}charts[id]=new Chart(el,{type,data,options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{family:'Segoe UI'}}},tooltip:{enabled:true}},...options}});}
 async function loadOverview(){const params=filterParams();const [s,t]=await Promise.all([api('/api/summary?'+params),api('/api/trend?'+params)]);

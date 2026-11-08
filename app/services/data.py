@@ -1,7 +1,7 @@
 from datetime import date
 from fastapi import HTTPException
 from sqlalchemy import select
-from ..models import Student, Classroom, Semester, AcademicResult, WarningHistory, ConfigVersion, Evaluation, Intervention, Debt, Course, Audit, now
+from ..models import Student, StudentAccount, Classroom, Semester, AcademicResult, WarningHistory, ConfigVersion, Evaluation, Intervention, Debt, Course, Audit, now
 from .assessment import evaluate
 
 def asdict(obj):
@@ -42,7 +42,8 @@ def assessment(db,student,semester_id,config=None,override=False,save=False):
     return output
 def scoped_students(db,user):
     q=select(Student)
-    if user.role!='admin': q=q.where(Student.advisor_id==user.id)
+    if user.role=='advisor': q=q.where(Student.advisor_id==user.id)
+    elif user.role=='student': q=q.join(StudentAccount,StudentAccount.student_id==Student.id).where(StudentAccount.user_id==user.id)
     return list(db.scalars(q))
 def filtered(db,user,params,config=None,override=False):
     latest=db.scalars(select(Semester).where(Semester.completed==True,Semester.kind=='regular').order_by(Semester.sequence.desc())).first()
@@ -59,7 +60,7 @@ def filtered(db,user,params,config=None,override=False):
         if params.get('level') and r['level']!=params['level']: continue
         if params.get('rule') and (r.get('rule') or {}).get('state','none')!=params['rule']: continue
         if params.get('status') and not any(p.status==params['status'] for p in plans): continue
-        items.append({**asdict(s),'major_id':cls.major_id,'cohort_id':cls.cohort_id,'assessment':r,'statuses':[p.status for p in plans]})
+        items.append({**asdict(s),'class_name':cls.name,'major_id':cls.major_id,'cohort_id':cls.cohort_id,'assessment':r,'statuses':[p.status for p in plans]})
     sort=params.get('sort','risk')
     items.sort(key=(lambda s:s['name']) if sort=='name' else ((lambda s:s['id']) if sort=='id' else lambda s:-(s['assessment']['score'] if s['assessment']['score'] is not None else -1)))
     return items,sid

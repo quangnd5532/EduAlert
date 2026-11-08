@@ -13,7 +13,7 @@ def main():
     env = {**os.environ, 'PYTHONIOENCODING': 'utf-8'}
     commands = [
         [sys.executable, '-m', 'compileall', '-q', 'app', 'migrations', 'scripts', 'tests'],
-        [sys.executable, '-m', 'unittest', 'tests.test_assessment', 'tests.test_demo_data', '-v'],
+        [sys.executable, '-m', 'unittest', 'tests.test_assessment', 'tests.test_demo_data', 'tests.test_portal_data', '-v'],
     ]
     node = shutil.which('node')
     if node:
