@@ -20,8 +20,11 @@ def students(request:Request,user=Depends(staff),db=Depends(get_db)):
     items,sid=filtered(db,user,request.query_params)
     try: page=max(1,min(int(request.query_params.get('page',1)),10000))
     except ValueError: raise HTTPException(422,'Số trang không hợp lệ')
-    size=12
-    return {'items':items[(page-1)*size:page*size],'total':len(items),'page':page,'pages':max(1,(len(items)+size-1)//size),'semester_id':sid}
+    try: size=int(request.query_params.get('page_size',12))
+    except ValueError: raise HTTPException(422,'Số dòng mỗi trang không hợp lệ')
+    if size not in (12,24,60): raise HTTPException(422,'Chọn 12, 24 hoặc 60 sinh viên mỗi trang')
+    page=min(page,max(1,(len(items)+size-1)//size))
+    return {'items':items[(page-1)*size:page*size],'total':len(items),'page':page,'pages':max(1,(len(items)+size-1)//size),'page_size':size,'semester_id':sid}
 @router.get('/summary')
 def dashboard(request:Request,user=Depends(staff),db=Depends(get_db)):
     return summary(db,user,request.query_params)
@@ -132,8 +135,9 @@ def update_plan(pid:int,data:InterventionUpdate,user=Depends(staff),db=Depends(g
 def export(request:Request,user=Depends(staff),db=Depends(get_db)):
     items,sid=filtered(db,user,request.query_params)
     audit(db,user,'export',{'filters':dict(request.query_params),'count':len(items)});db.commit()
-    return Response(csv_bytes(['Mã sinh viên','Họ tên','Lớp','Ngành','Khóa','Kỳ','Điểm hỗ trợ /100','Mức nguy cơ','Kết quả quy tắc','Phiên bản','Can thiệp'],
-        [[s['id'],s['name'],s['class_id'],s['major_id'],s['cohort_id'],sid,s['assessment']['score'],s['assessment']['level'],s['assessment']['rule_label'],s['assessment']['config_id'],'; '.join(s['statuses'])] for s in items]),
+    return Response(csv_bytes(['Mã sinh viên','Họ tên','Lớp','Ngành','Khóa','Kỳ','Điểm hỗ trợ /100','Mức nguy cơ','Kết quả quy tắc','Phiên bản','Can thiệp','GPA học kỳ','GPA tích lũy','Tín chỉ đăng ký','Tín chỉ không đạt','Tín chỉ tích lũy','Lý do','Thông tin cần bổ sung'],
+        [[s['id'],s['name'],s['class_id'],s['major_id'],s['cohort_id'],sid,s['assessment']['score'],s['assessment']['level'],s['assessment']['rule_label'],s['assessment']['config_id'],'; '.join(s['statuses']),
+          *[s['academic'].get(key) for key in ('gpa','cumulative_gpa','registered','failed','accumulated')],s['assessment'].get('summary',''),'; '.join(s['assessment']['missing'])] for s in items]),
         media_type='text/csv',headers={'Content-Disposition':'attachment; filename=edualert-report.csv'})
 @router.get('/configs')
 def configs(user=Depends(admin),db=Depends(get_db)):
@@ -143,18 +147,40 @@ def create_config(data:ConfigInput,user=Depends(admin),db=Depends(get_db)):
     if data.major_id and not db.get(Major,data.major_id) or data.cohort_id and not db.get(Cohort,data.cohort_id): raise HTTPException(422,'Phạm vi không tồn tại')
     c=ConfigVersion(**data.model_dump());db.add(c);db.flush();audit(db,user,'config_draft',{'id':c.id,'payload':c.payload});db.commit();return asdict(c)
 @router.post('/configs/{cid}/preview')
-def preview_config(cid:int,user=Depends(admin),db=Depends(get_db)):
+def preview_config(cid:int,semester_id:int|None=None,user=Depends(admin),db=Depends(get_db)):
     c=db.get(ConfigVersion,cid)
     if not c: raise HTTPException(404,'Không tìm thấy phiên bản')
-    before,sid=filtered(db,user,{});after=[]
+    before,sid=filtered(db,user,{'semester_id':semester_id} if semester_id else {});after=[];examples=[];applicable=0
+    term=db.get(Semester,sid)
+    if not term or not term.completed or term.kind!='regular': raise HTTPException(422,'Chọn học kỳ chính đã hoàn thành để xem trước.')
     for s in before:
         student=db.get(Student,s['id']);cls=db.get(Classroom,student.class_id)
         # Preview exact activation priority, including more-specific active scopes.
         candidates=[x for x in db.scalars(select(ConfigVersion).where(ConfigVersion.active==True)) if (x.major_id,x.cohort_id)!=(c.major_id,c.cohort_id)] + [c]
         candidates=[x for x in candidates if (not x.major_id or x.major_id==cls.major_id) and (not x.cohort_id or x.cohort_id==cls.cohort_id)]
         selected=max(candidates,key=lambda x:(2*bool(x.major_id)+bool(x.cohort_id),x.id),default=None)
-        after.append(assessment(db,student,sid,selected,True))
-    return {'total':len(before),'changed':sum(s['assessment']['level']!=a['level'] for s,a in zip(before,after)), 'missing':sum(a['score'] is None for a in after),'note':'Xem trước kỳ chính mới nhất; không sửa lịch sử.'}
+        result=assessment(db,student,sid,selected,True);after.append(result)
+        if selected and selected.id==c.id: applicable+=1
+        old=s['assessment']
+        if old['level']!=result['level'] or old['score']!=result['score'] or old['rule_label']!=result['rule_label']:
+            examples.append({'id':student.id,'name':student.name,'class_name':cls.name,
+                'before_score':old['score'],'after_score':result['score'],'before_level':old['level'],'after_level':result['level'],
+                'before_rule':old['rule_label'],'after_rule':result['rule_label'],'reason':result.get('summary','')})
+    labels=['Bình thường','Cần chú ý','Nguy cơ cao','Chưa đủ dữ liệu']
+    return {'total':len(before),'applicable':applicable,'changed':sum(s['assessment']['level']!=a['level'] for s,a in zip(before,after)),
+        'score_changed':sum(s['assessment']['score']!=a['score'] for s,a in zip(before,after)),
+        'rule_changed':sum(s['assessment']['rule_label']!=a['rule_label'] for s,a in zip(before,after)),
+        'missing':sum(a['score'] is None for a in after),'semester_id':sid,'semester_name':term.name,
+        'distribution':[{'label':label,'before':sum(s['assessment']['level']==label for s in before),'after':sum(a['level']==label for a in after)} for label in labels],
+        'examples':examples[:50],'examples_total':len(examples),'note':'Xem trước theo kỳ đã chọn, bao gồm ưu tiên phạm vi ngành và khóa; không sửa kết quả đã lưu.'}
+@router.put('/configs/{cid}')
+def update_config(cid:int,data:ConfigInput,user=Depends(admin),db=Depends(get_db)):
+    config=db.get(ConfigVersion,cid)
+    if not config: raise HTTPException(404,'Không tìm thấy phiên bản cấu hình.')
+    if config.active or config.activated_at: raise HTTPException(409,'Phiên bản đã áp dụng được giữ nguyên. Hãy sao chép để tạo bản nháp mới.')
+    if data.major_id and not db.get(Major,data.major_id) or data.cohort_id and not db.get(Cohort,data.cohort_id): raise HTTPException(422,'Phạm vi không tồn tại')
+    for key,value in data.model_dump().items(): setattr(config,key,value)
+    audit(db,user,'config_draft_updated',{'id':cid});db.commit();return asdict(config)
 @router.post('/configs/{cid}/activate')
 def activate(cid:int,user=Depends(admin),db=Depends(get_db)):
     # SQLite writer reservation serializes same-scope activation.
@@ -168,17 +194,23 @@ def activate(cid:int,user=Depends(admin),db=Depends(get_db)):
         if (old.major_id,old.cohort_id)==(c.major_id,c.cohort_id): old.active=False
     c.active=True;c.activated_at=now();audit(db,user,'config_activate',{'id':cid,'scope':[c.major_id,c.cohort_id]});db.commit();return {'ok':True,'id':cid}
 @router.get('/import/template/{kind}')
-def template_csv(kind:str,user=Depends(admin)):
+def template_csv(kind:str,filled:bool=True,user=Depends(admin)):
     if kind not in HEADERS: raise HTTPException(404,'Mẫu không tồn tại')
-    return Response(csv_bytes(HEADERS[kind],[]),media_type='text/csv',headers={'Content-Disposition':f'attachment; filename={kind}.csv'})
+    from ..services.import_samples import sample_rows
+    rows=sample_rows()[kind] if filled else []
+    return Response(csv_bytes(HEADERS[kind],[[str(row.get(key,'')).lower() if isinstance(row.get(key),bool) else row.get(key,'') for key in HEADERS[kind]] for row in rows]),media_type='text/csv',headers={'Content-Disposition':f'attachment; filename={kind}_{"sample" if filled else "blank"}.csv'})
 @router.post('/import/preview')
 async def import_preview(file:UploadFile=File(...),kind:str=Form(...),mode:str=Form(...),user=Depends(admin),db=Depends(get_db)):
     raw=await file.read(2*1024*1024+1)
     try:
-        rows=parse_file(raw,kind);_,errors,existing=validate_rows(db,kind,rows,mode)
+        rows=parse_file(raw,kind);clean,errors,existing=validate_rows(db,kind,rows,mode)
     except ValueError as e: raise HTTPException(422,str(e))
     b=ImportBatch(id=secrets.token_urlsafe(24),user_id=user.id,kind=kind,mode=mode,rows=rows,errors=errors);db.add(b);db.commit()
-    return {'id':b.id,'rows':rows[:10],'count':len(rows),'errors':errors,'existing':existing,'mode':mode,'notice':f'{existing} bản ghi đã tồn tại: '+('bỏ qua' if mode=='skip' else 'cập nhật toàn bộ trường từ tệp')}
+    new=sum(found is None for _,found in clean)
+    return {'id':b.id,'rows':rows[:10],'count':len(rows),'errors':errors,'existing':existing,'mode':mode,
+        'new':new,'updated':existing if mode=='update' else 0,'skipped':existing if mode=='skip' else 0,
+        'save_count':new+(existing if mode=='update' else 0),'preview_count':min(10,len(rows)),
+        'notice':f'{existing} bản ghi đã tồn tại: '+('giữ nguyên và bỏ qua' if mode=='skip' else 'cập nhật toàn bộ trường từ tệp')}
 def get_batch(db,user,bid):
     b=db.get(ImportBatch,bid)
     if not b or b.user_id!=user.id: raise HTTPException(404,'Không tìm thấy phiên nhập')

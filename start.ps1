@@ -66,7 +66,7 @@ function Find-EduPython {
 try {
     try {
         $eduRunning = Invoke-RestMethod -Uri "http://127.0.0.1:$Port/health" -TimeoutSec 2
-        if ($eduRunning.application -eq 'edualert' -and $eduRunning.version -eq '3.1.0' -and $eduRunning.status -eq 'ok') {
+        if ($eduRunning.application -eq 'edualert' -and $eduRunning.version -eq '3.4.0' -and $eduRunning.status -eq 'ok') {
             Write-Host "EduAlert da san sang. Uvicorn running on http://127.0.0.1:$Port"
             exit 0
         }

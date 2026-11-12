@@ -13,7 +13,9 @@ def check_password(encoded,password):
     except (VerificationError,InvalidHashError): return False
 def current_user(request:Request,db=Depends(get_db),csrf_header:str|None=Header(default=None,alias='X-CSRF-Token',description='Cần cho POST/PUT/PATCH/DELETE; token ở meta csrf-token sau đăng nhập')):
     user=db.get(User,request.session.get('uid')) if request.session.get('uid') else None
-    if not user or not user.active: raise HTTPException(401,'Vui lòng đăng nhập')
+    if not user or not user.active or request.session.get('session_version',0)!=user.session_version:
+        request.session.clear()
+        raise HTTPException(401,'Vui lòng đăng nhập')
     return user
 def admin(user=Depends(current_user)):
     if user.role!='admin': raise HTTPException(403,'Chỉ quản trị viên được thực hiện')

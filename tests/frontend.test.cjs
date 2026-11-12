@@ -118,7 +118,85 @@ test('empty intervention list and nested unknown rule have explicit states', () 
   const html = context.ruleTree({ op: 'OR', state: 'unknown', children: [
     { field: 'gpa', op: 'lt', value: 1.2, state: 'unknown', reason: 'Thiếu gpa' },
   ] });
-  assert.ok(html.includes('Nhóm OR'));
+  assert.ok(html.includes('Thỏa ít nhất một điều kiện'));
   assert.ok(html.includes('Không đủ dữ liệu'));
   assert.ok(html.includes('Thiếu gpa'));
+});
+
+test('missing data and enrollment history render separately with escaped actions', () => {
+  const { context } = harness();
+  const html = context.dataIssues(assessment({ data_issues: [
+    { kind: 'missing', factor: 'GPA', reason: 'Chưa có điểm HK1', action: '<script>unsafe</script>' },
+    { kind: 'history', factor: 'Xu hướng', reason: 'Mới có 2 kỳ', action: 'Theo dõi thêm kỳ tiếp theo' },
+  ] }));
+  assert.ok(html.includes('Thông tin cần bổ sung (1)'));
+  assert.ok(html.includes('Cần thêm thời gian theo dõi (1)'));
+  assert.ok(!html.includes('<script>'));
+  assert.ok(html.includes('Theo dõi thêm kỳ tiếp theo'));
+});
+
+test('configuration editor preserves percent units and nested condition semantics', () => {
+  const source = fs.readFileSync('static/configuration.js', 'utf8');
+  const context = vm.createContext({
+    document: { querySelector: () => ({ textContent: '[]' }) },
+    safe: () => {}, esc: value => String(value).replaceAll('<', '&lt;'),
+  });
+  vm.runInContext(source, context);
+  const rule = { op: 'OR', children: [
+    { field: 'failed_ratio', op: 'ge', value: .5 },
+    { op: 'AND', children: [{ field: 'gpa', op: 'lt', value: 1.2 }, { field: 'conduct', op: 'lt', value: 50 }] },
+  ] };
+  vm.runInContext('currentRule=' + JSON.stringify(rule), context);
+  const elements = Object.fromEntries(Object.entries({ name: 'Policy', major_id: '', cohort_id: 'K25',
+    weight_0: 35, weight_1: 25, weight_2: 25, weight_3: 15, attention: 30, high: 60,
+    gpa_target: 2.5, gpa_span: 1.5, trend_span: 1, repeat_span: 2, fail_percent: 50,
+  }).map(([key, value]) => [key, { value: String(value) }]));
+  const payload = context.readConfiguration({ elements }).payload;
+  assert.equal(payload.fail_span, .5);
+  assert.deepEqual(JSON.parse(JSON.stringify(payload.rule)), rule);
+  assert.equal(context.policyValidation(payload), '');
+  assert.ok(context.conditionMarkup(rule).includes('value="50"'));
+  assert.ok(context.readablePolicy(rule).includes('50%'));
+  assert.ok(context.readablePolicy(rule).includes(' và '));
+  assert.ok(context.readablePolicy(rule).includes(' hoặc '));
+  assert.notEqual(context.policyValidation({ ...payload, weights: [10, 10, 10, 10] }), '');
+});
+
+function studentPlanner(fetchImpl) {
+  const fixture=harness(fetchImpl),listeners=new Map();
+  const button={disabled:false};
+  const form={rows:[['gpa','3'],['registered','18'],['failed','3'],['previous_gpa_credits','76'],['csrf','fixture-csrf-token']],
+    elements:{no_repeats:{checked:true},all_registered_count:{checked:true}},
+    addEventListener:(name,handler)=>{listeners.set(name,[...(listeners.get(name)||[]),handler]);},
+    querySelectorAll:()=>[],querySelector:()=>button};
+  const output={innerHTML:'',scrollIntoView:()=>{}};
+  fixture.nodes.set('#my-simulation',form);fixture.nodes.set('#my-simulation-result',output);
+  fixture.nodes.set('#student-model',{textContent:JSON.stringify({semester_id:6})});
+  fixture.context.document.body.dataset={page:'student',view:'planning'};
+  fixture.context.window.matchMedia=()=>({matches:true});
+  vm.runInContext(fs.readFileSync('static/student.js','utf8'),fixture.context);
+  return {listeners,output,button,form};
+}
+
+test('student plan uses the same server view and invalidates results after editing', async () => {
+  const planner=studentPlanner(async()=>({ok:true,json:async()=>({student_html:'<section>GPA 3.00; cần trung bình 3.60/4</section>'})}));
+  await planner.listeners.get('submit')[0]({preventDefault:()=>{}});
+  assert.ok(planner.output.innerHTML.includes('3.60/4'));
+  assert.equal(planner.button.disabled,false);
+  planner.listeners.get('input')[0]();
+  assert.ok(!planner.output.innerHTML.includes('3.60/4'));
+  assert.ok(planner.output.innerHTML.includes('tính lại'));
+  planner.listeners.get('reset')[0]();
+  assert.equal(planner.output.innerHTML,'');
+});
+
+test('student plan cannot display a response for inputs edited while waiting', async () => {
+  let resolve;
+  const planner=studentPlanner(()=>new Promise(done=>{resolve=done;}));
+  const submitting=planner.listeners.get('submit')[0]({preventDefault:()=>{}});
+  planner.listeners.get('change')[0]();
+  resolve({ok:true,json:async()=>({student_html:'<section>Old target result</section>'})});
+  await submitting;
+  assert.ok(!planner.output.innerHTML.includes('Old target result'));
+  assert.ok(planner.output.innerHTML.includes('thay đổi mục tiêu'));
 });

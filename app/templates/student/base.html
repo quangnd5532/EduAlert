@@ -5,6 +5,7 @@
  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="csrf-token" content="{{csrf}}">
  <title>{{title}} · Cổng sinh viên EduAlert</title><link rel="icon" href="/static/favicon.svg">
  <link rel="stylesheet" href="/static/student.css"><script defer src="/static/vendor/chart.umd.js"></script><script defer src="/static/portal.js"></script><script defer src="/static/student.js"></script>
+ {% if view=='planning' %}<link rel="stylesheet" href="/static/planning.css">{% endif %}
 </head>
 <body class="campus-portal" data-page="student" data-view="{{view}}">
 <a class="skip" href="#main">Đến nội dung chính</a>
@@ -17,11 +18,11 @@
  <aside class="campus-sidebar"><div class="sidebar-student"><span class="student-monogram" aria-hidden="true">{{model.profile.name.split()[-1][:1]}}{{model.profile.name.split()[0][:1]}}</span><b>{{model.profile.name}}</b><span>{{model.profile.class_name}} · {{model.profile.id}}</span><small>Không gian sinh viên</small></div><nav aria-label="Chức năng sinh viên">{{nav_links(student_pages,view,model.semester_id)}}</nav><div class="sidebar-context"><span>Đang xem</span><b>{{model.semester_name}}</b><small>Dữ liệu đến cuối học kỳ</small></div></aside>
  <div class="campus-content"><details class="mobile-navigation"><summary>Danh mục chức năng {{icon('menu')}}</summary><nav aria-label="Chức năng sinh viên trên điện thoại">{{nav_links(student_pages,view,model.semester_id)}}</nav></details>
  <main id="main"><nav class="breadcrumb" aria-label="Đường dẫn"><a href="/student/overview">Trang chủ</a><span aria-hidden="true">/</span><span aria-current="page">{{title}}</span></nav>
- <div class="page-title"><div><h1>{{title}}</h1><p>{{description}}</p></div>{% if view!='profile' %}<form class="semester-form" method="get"><label for="semester-filter">Học kỳ</label><div><select name="semester_id" id="semester-filter">{% for term in model.semesters|reverse %}<option value="{{term.id}}" {% if term.id==model.semester_id %}selected{% endif %}>{{term.name}}</option>{% endfor %}</select><button class="button secondary" type="submit">Xem</button></div>{% if view=='results' %}<input type="hidden" name="q" value="{{q}}"><input type="hidden" name="course_status" value="{{course_status}}">{% endif %}</form>{% endif %}</div>
+ <div class="page-title"><div><h1>{{title}}</h1><p>{{description}}</p></div>{% if view!='profile' %}<form class="semester-form" method="get"><label for="semester-filter">{{'Học kỳ làm mốc' if view=='planning' else 'Học kỳ'}}</label><div><select name="semester_id" id="semester-filter">{% for term in model.semesters|reverse %}<option value="{{term.id}}" {% if term.id==model.semester_id %}selected{% endif %}>{{term.name}}</option>{% endfor %}</select><button class="button secondary" type="submit">Xem</button></div>{% if view=='results' %}<input type="hidden" name="q" value="{{q}}"><input type="hidden" name="course_status" value="{{course_status}}">{% endif %}</form>{% endif %}</div>
  <div id="feedback" role="status" aria-live="polite"></div>
  {% block content %}{% endblock %}
  <noscript><p class="notice">Biểu đồ tương tác cần JavaScript. Bạn vẫn có thể tra cứu dữ liệu, tính kịch bản và gửi đề nghị bằng các biểu mẫu trên trang.</p></noscript>
- </main><footer class="campus-footer"><b>EduAlert · Cổng hỗ trợ học tập</b><span>Dữ liệu trải nghiệm là giả lập · Chỉ số hỗ trợ không phải xác suất trượt hoặc bỏ học.</span></footer></div>
+ </main><footer class="campus-footer"><b>EduAlert · Cổng hỗ trợ học tập</b><span>Chủ động trong học tập, đồng hành trong phát triển.</span></footer></div>
 </div>
 <script type="application/json" id="student-model">{{model|tojson}}</script><script type="application/json" id="catalog-data">{}</script>
 </body></html>

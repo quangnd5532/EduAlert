@@ -11,7 +11,19 @@
 {% elif name=='arrow' %}<path d="M4 12h16m-6-6 6 6-6 6"/>
 {% elif name=='download' %}<path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/>
 {% elif name=='check' %}<circle cx="12" cy="12" r="9"/><path d="m7 12 3 3 7-7"/>
+{% elif name=='eye' %}<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>
+{% elif name=='mail' %}<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 6 9 7 9-7"/>
+{% elif name=='phone' %}<path d="m5 3 4 1 1 5-3 2a15 15 0 0 0 6 6l2-3 5 1 1 4c-1 4-7 3-12-2S1 4 5 3Z"/>
+{% elif name=='help' %}<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 16v.1"/>
 {% endif %}</svg>
+{%- endmacro %}
+{% macro data_issues(assessment) -%}
+{% if assessment.data_issues is defined %}
+{% for kind,title in [('missing','Thông tin cần bổ sung'),('history','Cần thêm thời gian theo dõi')] %}
+{% set issues=assessment.data_issues|selectattr('kind','equalto',kind)|list %}
+{% if issues %}<div class="notice"><b>{{title}}</b><ul>{% for item in issues %}<li><strong>{{item.factor}}</strong>: {{item.reason}}<p>{{item.action}}</p></li>{% endfor %}</ul></div>{% endif %}
+{% endfor %}
+{% elif assessment.missing %}<p class="notice">{{assessment.missing|join('; ')}}</p>{% endif %}
 {%- endmacro %}
 {% macro nav_links(pages,view,semester) -%}
 <span class="nav-group">Học tập</span>
@@ -22,5 +34,5 @@
 {% macro risk_label(level) -%}<span class="badge {{'high' if level=='Nguy cơ cao' else 'attention' if level=='Cần chú ý' else 'normal' if level=='Bình thường' else 'missing'}}">{{level}}</span>{%- endmacro %}
 {% macro rule_tree(r) -%}
 {% if r.children is defined %}<div class="rule-group"><p><b>{{'Thỏa ít nhất một điều kiện' if r.op=='OR' else 'Thỏa tất cả điều kiện'}}</b><span class="badge {{'attention' if r.state=='true' else 'normal' if r.state=='false' else 'missing'}}">{{{'true':'Thỏa','false':'Không thỏa','unknown':'Chưa đủ dữ liệu'}[r.state]}}</span></p><ul>{% for child in r.children %}<li>{{rule_tree(child)}}</li>{% endfor %}</ul></div>
-{% else %}<div class="condition"><b>{{{'gpa':'GPA học kỳ','cumulative_gpa':'GPA tích lũy','failed_ratio':'Tỷ lệ tín chỉ không đạt','conduct':'Điểm rèn luyện'}.get(r.field,r.field)}} {{{'lt':'<','le':'≤','gt':'>','ge':'≥','eq':'='}[r.op]}} {{r.value}}</b><span>Thực tế: {{r.actual|grade}} · {{{'true':'Thỏa điều kiện','false':'Không thỏa','unknown':'Chưa có dữ liệu'}[r.state]}}</span></div>{% endif %}
+{% else %}<div class="condition"><b>{{{'gpa':'GPA học kỳ','cumulative_gpa':'GPA tích lũy','failed_ratio':'Tỷ lệ tín chỉ không đạt','conduct':'Điểm rèn luyện'}.get(r.field,r.field)}} {{{'lt':'<','le':'≤','gt':'>','ge':'≥','eq':'='}[r.op]}} {% if r.field=='failed_ratio' %}{{(r.value*100)|grade(1)}}%{% else %}{{r.value}}{% endif %}</b><span>Thực tế: {% if r.field=='failed_ratio' and r.actual is not none %}{{(r.actual*100)|grade(1)}}%{% else %}{{r.actual|grade}}{% endif %} · {{{'true':'Thỏa điều kiện','false':'Không thỏa','unknown':'Chưa có dữ liệu'}[r.state]}}</span></div>{% endif %}
 {%- endmacro %}

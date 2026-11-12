@@ -2,7 +2,9 @@
 
 Dự án giữa kỳ nhóm 5A: FastAPI + Jinja2 + SQLAlchemy + SQLite, giao diện tiếng Việt. Khối quản lý có 9 màn hình chính; cổng sinh viên có 6 trang riêng. Hồ sơ sinh viên và tài khoản cố vấn đều giả lập. Hai kết quả độc lập: xét điều kiện cảnh báo theo cấu hình và điểm ưu tiên hỗ trợ 0–100.
 
-**Bản hiện tại 3.1.0 — 09/11/2026:** server đã chạy tại **http://127.0.0.1:8001**, đã migration/seed và phục vụ Chart.js/Swagger từ máy local. **61 kiểm thử pytest và 6 kiểm thử JavaScript chạy đạt**; còn 1 cảnh báo deprecation từ Starlette/AnyIO. Dữ liệu có 60 hồ sơ giả lập, 110 học phần, 2.676 kết quả học phần và 60 tài khoản sinh viên. Xem [cổng sinh viên và các trang riêng](docs/student-portal.md), [kết quả chạy kiểm tra](docs/release-checks.txt) và [giới hạn kiểm tra giao diện](docs/testing.md).
+**Bản hiện tại 3.4.0 — 09/11/2026:** chạy tại **http://127.0.0.1:8001**. Trang kế hoạch có mục tiêu GPA dễ hiểu, học phần cần ưu tiên và việc sinh viên có thể làm theo tuần. Đã có dữ liệu khóa 23/24/25, 17 kiểu sắp xếp, 4 mẫu CSV và biểu mẫu cấu hình. **107 kiểm thử Python và 10 kiểm thử JavaScript đạt**. Xem [kế hoạch học tập 3.4](docs/student-planning.md), [quản lý dữ liệu 3.3](docs/data-management.md) và [khôi phục mật khẩu](docs/password-recovery.md).
+
+**Cập nhật trang đăng nhập:** bổ sung quên mật khẩu qua email sinh viên hoặc số điện thoại đã đăng ký, cập nhật thông tin khôi phục trong hồ sơ và bỏ tài khoản trải nghiệm khỏi giao diện. Xem [luồng sử dụng và cấu hình gửi email/SMS thật](docs/password-recovery.md). Dịch vụ gửi mã cần được đơn vị vận hành cấu hình riêng.
 
 ## Giới thiệu nhóm
 
@@ -48,8 +50,8 @@ Mở **http://127.0.0.1:8001**. Tài liệu API: **http://127.0.0.1:8001/docs**,
 | `admin` | Quản trị viên | Toàn bộ 60 hồ sơ |
 | `advisor1` | Cố vấn A | L1, L2; 30 hồ sơ |
 | `advisor2` | Cố vấn B | L3, L4; 30 hồ sơ |
-| `student` hoặc `000005` | Sinh viên | Chỉ hồ sơ000005, cổng6 trang riêng |
-| `sv000001`… hoặc mã SV | Sinh viên khác | Chỉ hồ sơ được liên kết với tài khoản |
+| `student` hoặc `2351000005` | Sinh viên | Chỉ hồ sơ2351000005, cổng6 trang riêng |
+| `sv` + mã sinh viên mới hoặc mã SV | Sinh viên khác | Chỉ hồ sơ được liên kết với tài khoản |
 
 Mật khẩu là giá trị `EDUALERT_DEMO_PASSWORD` **lúc seed lần đầu**, ví dụ `EduAlertDemo!2026` theo lệnh trên. Tài khoản sinh viên được tạo khi nâng cấp DB demo cũ dùng cùng mật khẩu admin demo lúc nâng cấp. Không có mật khẩu mặc định trong mã ứng dụng. Seed chạy lặp lại không nhân đôi, không tự đổi mật khẩu tài khoản cũ. Demo chỉ chạy khi `EDUALERT_DEMO=true`.
 
@@ -104,4 +106,4 @@ Nếu dùng Python3.13 thì thay `.venv312` bằng `.venv313`. Các test thuần
 
 Giữ `EDUALERT_HTTPS=false` cho local HTTP. Khi triển khai sau reverse proxy HTTPS, đặt `EDUALERT_HTTPS=true` và `EDUALERT_SECRET` ngẫu nhiên ít nhất 32 ký tự qua biến môi trường. Cookie session HttpOnly, SameSite=Lax, Secure khi bật HTTPS. Session chứa ID và CSRF, không chứa hồ sơ học tập. Mọi ghi dữ liệu cần CSRF, mọi truy cập sinh viên kiểm tra phân công ở backend.
 
-Bản này phục vụ demo cục bộ, chưa kiểm định production. Chưa có khôi phục mật khẩu, nhiều cơ sở đào tạo, quy chế học lại, mô hình dự đoán hay gửi thông báo tự động. GPA tích lũy giả định chỉ tính khi có GPA hiện tại, số tín chỉ đã tính GPA và xác nhận không học lại/mọi tín chỉ kỳ tới tính GPA; thiếu điều kiện thì hiện lý do. Không có tuyên bố về độ chính xác dự đoán hoặc hiệu quả nhân quả của can thiệp.
+Bản này phục vụ demo cục bộ, chưa kiểm định production. Đã có khôi phục mật khẩu (cần cấu hình dịch vụ gửi mã). Chưa có nhiều cơ sở đào tạo, quy chế học lại, mô hình dự đoán hay gửi thông báo tự động. GPA tích lũy giả định chỉ tính khi có GPA hiện tại, số tín chỉ đã tính GPA và xác nhận không học lại/mọi tín chỉ kỳ tới tính GPA; thiếu điều kiện thì hiện lý do. Không có tuyên bố về độ chính xác dự đoán hoặc hiệu quả nhân quả của can thiệp.

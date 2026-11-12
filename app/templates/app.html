@@ -6,10 +6,12 @@
 <meta name="csrf-token" content="{{csrf}}">
 <title>{{title}} · EduAlert</title>
 <link rel="stylesheet" href="/static/portal.css">
+<link rel="stylesheet" href="/static/refinements.css">
 <script defer src="/static/vendor/chart.umd.js">
 </script>
 <script defer src="/static/portal.js">
 </script>
+{% if page=='settings' %}<script defer src="/static/configuration.js"></script>{% endif %}
 </head>
 <body data-page="{{page}}" data-student="{{student_id or ''}}">
 <a href="#main" class="skip">Đến nội dung</a>
@@ -69,7 +71,7 @@
 <option value="">Tất cả khóa</option>{% for x in catalogs.cohorts %}<option value="{{x.id}}">{{x.name}}</option>{% endfor %}</select>
 </label>
 <label>Lớp<select name="class_id">
-<option value="">Tất cả lớp</option>{% for x in catalogs.classes %}<option>{{x.id}}</option>{% endfor %}</select>
+<option value="">Tất cả lớp</option>{% for x in catalogs.classes %}<option value="{{x.id}}">{{x.name}}</option>{% endfor %}</select>
 </label>
 <label>Mức nguy cơ<select name="level">
 <option value="">Tất cả mức</option>{% for x in ['Bình thường','Cần chú ý','Nguy cơ cao','Chưa đủ dữ liệu'] %}<option>{{x}}</option>{% endfor %}</select>
@@ -86,12 +88,14 @@
 <option value="">Tất cả trạng thái</option>{% for x in ['Chưa xử lý','Đang hỗ trợ','Chờ theo dõi','Hoàn tất'] %}<option>{{x}}</option>{% endfor %}</select>
 </label>
 <label>Sắp xếp<select name="sort">
-<option value="risk">Nguy cơ giảm dần</option>
-<option value="name">Họ tên</option>
-<option value="id">Mã sinh viên</option>
+{% for value,label in sort_options %}<option value="{{value}}">{{label}}</option>{% endfor %}
 </select>
 </label>
+<label>Cố vấn phụ trách<select name="advisor_id"><option value="">Tất cả cố vấn</option>{% for advisor in advisors %}<option value="{{advisor.id}}">{{advisor.name}}</option>{% endfor %}</select></label>
+<label>Tình trạng dữ liệu<select name="data_quality"><option value="">Tất cả hồ sơ</option><option value="complete">Đủ dữ liệu đánh giá</option><option value="missing">Cần bổ sung thông tin</option><option value="history">Cần thêm kỳ theo dõi</option></select></label>
+{% if page=='students' %}<label>Số dòng mỗi trang<select name="page_size"><option value="12">12 sinh viên</option><option value="24">24 sinh viên</option><option value="60">60 sinh viên</option></select></label>{% endif %}
 <button class="primary">Áp dụng bộ lọc</button>
+<a class="filter-reset" href="{{request.url.path}}">Xóa bộ lọc</a>
 <a id="export" class="button" href="/api/export">Xuất CSV</a>{% if page=='reports' %}<button type="button" id="print">In / lưu PDF</button>{% endif %}</form>{% endif %}
 {% if page in ['dashboard','reports'] %}<p id="report-context" class="muted">
 </p>
@@ -244,57 +248,8 @@
 <div id="simulation-output" aria-live="polite">
 </div>
 </section>{% endif %}
-{% if page=='import' %}<div class="notice">Nhập theo thứ tự: danh mục & tài khoản → sinh viên → kết quả học kỳ → môn nợ / lịch sử cảnh báo. Mã sinh viên là chuỗi. UTF-8 / BOM · tối đa 2 MB, 5.000 dòng.</div>
-<section class="panel">
-<h2>1. Chọn mẫu và kiểm tra</h2>
-<div class="download-links">{% for x,l in [('students','Sinh viên'),('results','Kết quả học kỳ'),('debts','Học phần nợ'),('warnings','Lịch sử cảnh báo')] %}<a class="button" href="/api/import/template/{{x}}">Mẫu {{l}}</a>{% endfor %}</div>
-<form id="import-form" class="form-grid">
-<label>Loại dữ liệu<select name="kind">
-<option value="students">Sinh viên</option>
-<option value="results">Kết quả học kỳ</option>
-<option value="debts">Học phần nợ</option>
-<option value="warnings">Lịch sử cảnh báo</option>
-</select>
-</label>
-<label>Khi trùng với cơ sở dữ liệu<select name="mode">
-<option value="skip">Bỏ qua bản ghi đã tồn tại</option>
-<option value="update">Cập nhật toàn bộ trường từ tệp</option>
-</select>
-</label>
-<label>Tệp CSV<input name="file" type="file" accept=".csv,text/csv" required>
-</label>
-<button class="primary">Kiểm tra và xem trước</button>
-</form>
-</section>
-<section class="panel">
-<h2>2. Xem trước và xác nhận</h2>
-<div id="import-preview">Chưa có tệp. Không có dữ liệu nào được ghi trước khi xác nhận.</div>
-</section>{% endif %}
-{% if page=='settings' %}<div class="notice">Bộ quy tắc minh họa phục vụ demo, không phải quy chế chính thức. Ưu tiên phạm vi: ngành + khóa → ngành → khóa → toàn cục. Kích hoạt không sửa các đánh giá đã lưu.</div>
-<section class="panel">
-<h2>Tạo phiên bản nháp</h2>
-<form id="config-form" class="form-grid">
-<label>Tên phiên bản<input name="name" value="Bộ quy tắc minh họa phục vụ demo" required maxlength="120">
-</label>
-<label>Ngành<select name="major_id">
-<option value="">Toàn bộ</option>{% for x in catalogs.majors %}<option value="{{x.id}}">{{x.name}}</option>{% endfor %}</select>
-</label>
-<label>Khóa<select name="cohort_id">
-<option value="">Toàn bộ</option>{% for x in catalogs.cohorts %}<option value="{{x.id}}">{{x.name}}</option>{% endfor %}</select>
-</label>
-<label class="full">Quy tắc và trọng số (JSON, kiểm tra theo danh sách trường / toán tử cho phép)<textarea id="config-json" name="payload" rows="20" spellcheck="false">{{default_config|tojson(indent=2)}}</textarea>
-</label>
-<p class="muted full">weights: GPA, không đạt, xu hướng, lặp lại; tổng = 100. Toán tử lt/le/gt/ge/eq; nhóm AND/OR. Trường: gpa, cumulative_gpa, failed_ratio, conduct. attention/high là ranh giới phân loại.</p>
-<button class="primary">Lưu bản nháp mới</button>
-</form>
-</section>
-<section class="panel">
-<h2>Phiên bản cấu hình</h2>
-<div id="config-list">
-</div>
-<div id="config-preview" aria-live="polite">
-</div>
-</section>{% endif %}
+{% if page=='import' %}{% include 'partials/import.html' %}{% endif %}
+{% if page=='settings' %}{% include 'partials/settings.html' %}{% endif %}
 {% if page=='interventions' %}<div class="actions">
 <button id="board-toggle">Đổi danh sách / bảng trạng thái</button>
 <a class="button" href="/students">Chọn sinh viên để tạo hồ sơ</a>

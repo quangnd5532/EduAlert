@@ -1,18 +1,18 @@
 # CSV: mẫu, kiểm tra và giao dịch
 
-Các mẫu trống tải trong giao diện CSV hoặc `/api/import/template/{kind}` (quản trị viên). Các mẫu có dữ liệu nằm trong `samples/`, chỉ tham chiếu danh mục seed: lớp L1, cố vấn 2, kỳ1–6, học phần HP01.
+Bản 3.3 có 4 mẫu có dữ liệu và bản trống, tải ngay trong trang Nhập CSV. Dữ liệu ví dụ: 6 sinh viên khóa 23/24/25, 24 kết quả học kỳ, 51 dòng học phần còn nợ theo kỳ và 24 quyết định cảnh báo. Xem [hướng dẫn hiện hành](data-management.md).
 
 ## Thứ tự nhập
 
 1. Tạo ngành, khóa, lớp, học kỳ, học phần và tài khoản cố vấn ở Quản trị; seed đã có sẵn.
-2. `students_valid.csv`: thêm mã giả lập `009001`, giữ số 0 đầu.
-3. `results_valid.csv`: 6 kết quả học kỳ, tham chiếu `009001`.
-4. `debts_valid.csv`: snapshot môn bắt buộc còn nợ tại kỳ6, không phải tổng môn trượt của mọi kỳ.
-5. `warnings_valid.csv`: true/false theo từng kỳ. Phải có các kỳ3/4/5 để F_repeat tại kỳ6 tính được. Không có dòng không đồng nghĩa false.
+2. `students_valid.csv`: 6 sinh viên, ví dụ `2351999001`, `2451999002`, `2551999005`.
+3. `results_valid.csv`: kết quả của đúng 6 sinh viên, chỉ từ thời điểm nhập học.
+4. `debts_valid.csv`: snapshot học phần còn nợ theo từng kỳ; tín chỉ khớp tiến độ tích lũy.
+5. `warnings_valid.csv`: true/false theo từng kỳ đã theo học. Thiếu dòng không được hiểu là false.
 
-Sau đủ các mẫu, `009001` có điểm71.5 theo cấu hình mặc định. File lỗi không được nhập nếu muốn giữ demo sạch; chỉ dùng bước preview để trình bày thông báo lỗi.
+Các tệp dùng chung mã sinh viên và danh mục seed L1–L6, cố vấn 2/3, kỳ 1–6, các học phần IT/BA. Các mẫu chứa cả trường hợp đủ dữ liệu và sinh viên mới chưa đủ số học kỳ đánh giá. Không cố tạo một điểm chung cho mọi hồ sơ.
 
-## Các cột, đúng thứ tự
+## Các cột bắt buộc
 
 ```csv
 id,name,class_id,advisor_id,admission_score,admission_scale,admission_method
@@ -21,7 +21,7 @@ student_id,semester_id,course_id
 student_id,semester_id,warned
 ```
 
-Mỗi dòng trên thuộc một loại tệp riêng: students/results/debts/warnings. Cột thừa, thiếu, sai thứ tự bị từ chối; tải mẫu mới nếu không chắc. UTF-8 hoặc UTF-8 BOM, dấu phẩy phân cột, dấu chấm thập phân, chuỗi chứa dấu phẩy phải có dấu nháy CSV. Không đổi mã sinh viên thành dạng khoa học khi dùng Excel. `warned` khuyên dùng `true`/`false`. Ô trống hợp lệ cho GPA, tích lũy/rèn luyện và điểm đầu vào; tín chỉ riêng kỳ bắt buộc. `status`: completed hoặc leave.
+Mỗi dòng trên thuộc một loại tệp riêng: students/results/debts/warnings. Cho phép đổi thứ tự cột; cột thừa, thiếu hoặc trùng bị từ chối. UTF-8 hoặc UTF-8 BOM, dấu phẩy hoặc chấm phẩy phân cột, dấu chấm thập phân, chuỗi chứa dấu phẩy phải có dấu nháy CSV. Không đổi mã sinh viên thành dạng khoa học khi dùng Excel. `warned` khuyên dùng `true`/`false`. Ô trống hợp lệ cho GPA, tích lũy/rèn luyện và điểm đầu vào; tín chỉ riêng kỳ bắt buộc. `status`: completed hoặc leave.
 
 ## Preview / confirm
 

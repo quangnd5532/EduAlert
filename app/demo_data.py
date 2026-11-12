@@ -101,11 +101,11 @@ def academic_data(number):
             debts.append({'student_id': student_id, 'course_id': 'HP01', 'semester_id': sequence})
     return results, warnings, debts
 
-def detailed_academics(number):
+def detailed_academics(number, results=None, warnings=None, major=None):
     """Course grades reconcile to semester aggregates; outstanding required courses carry forward."""
     from itertools import combinations
-    results,warnings,_=academic_data(number)
-    major='CNTT' if (number-1)%4<2 else 'QTKD'
+    if results is None: results,warnings,_=academic_data(number)
+    major=major or ('CNTT' if (number-1)%4<2 else 'QTKD')
     prefix='IT' if major=='CNTT' else 'BA'
     attempts=[]; debts=[]; outstanding=[]
     for r in results:

@@ -15,6 +15,11 @@ from .demo_data import student_profile, detailed_academics, course_catalog, CLAS
 def refresh_database(path):
     path=Path(path).resolve()
     if not path.is_file(): raise ValueError('Chưa có DB. Chạy migration và seed trước.')
+    with closing(sqlite3.connect(path)) as check:
+        version=check.execute('SELECT version_num FROM alembic_version').fetchone()
+    if version and version[0]=='0003':
+        from .upgrade_demo import upgrade_database
+        return upgrade_database(path)
     db=sqlite3.connect(path,timeout=20)
     db.row_factory=sqlite3.Row
     try:

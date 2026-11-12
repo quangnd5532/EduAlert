@@ -11,6 +11,7 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     role = Column(String, nullable=False)
     active = Column(Boolean, default=True, nullable=False)
+    session_version = Column(Integer, default=0, server_default='0', nullable=False)
     __table_args__ = (CheckConstraint("role in ('admin','advisor','student')", name='ck_users_role'),)
 class Major(Base):
     __tablename__ = 'majors'
@@ -60,6 +61,23 @@ class StudentAccount(Base):
     __tablename__ = 'student_accounts'
     user_id = Column(ForeignKey('users.id'), primary_key=True)
     student_id = Column(ForeignKey('students.id'), nullable=False, unique=True)
+    email = Column(String(254), unique=True)
+    phone = Column(String(20), unique=True)
+
+class PasswordRecovery(Base):
+    __tablename__ = 'password_recoveries'
+    id = Column(String(64), primary_key=True)
+    user_id = Column(ForeignKey('users.id'))
+    session_version = Column(Integer, nullable=False, default=0)
+    channel = Column(String(10), nullable=False)
+    destination_hash = Column(String(64), nullable=False, index=True)
+    ip_hash = Column(String(64), nullable=False, index=True)
+    code_hash = Column(String(64), nullable=False)
+    created_at = Column(Integer, nullable=False)
+    expires_at = Column(Integer, nullable=False)
+    attempts = Column(Integer, nullable=False, default=0)
+    verified = Column(Boolean, nullable=False, default=False)
+    consumed = Column(Boolean, nullable=False, default=False)
 
 class CourseResult(Base):
     __tablename__ = 'course_results'

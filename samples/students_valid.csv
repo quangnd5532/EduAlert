@@ -1,2 +1,7 @@
 ﻿id,name,class_id,advisor_id,admission_score,admission_scale,admission_method
-009001,Sinh viên nhập mẫu — Dữ liệu giả lập,L1,2,24,30,THPT giả lập
+2351999001,Nguyễn Minh Khôi,L1,2,24.0,30,THPT
+2451999002,Trần Bảo Trâm,L2,2,24.5,30,THPT
+2352999003,Lê Hoàng Phúc,L3,3,25.0,30,THPT
+2452999004,Phạm Ngọc Mai,L4,3,25.5,30,THPT
+2551999005,Võ Gia Hân,L5,2,26.0,30,THPT
+2552999006,Đặng Đức Anh,L6,3,26.5,30,THPT

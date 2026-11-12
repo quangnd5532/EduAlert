@@ -5,13 +5,14 @@ from fastapi import APIRouter,Depends,Request,HTTPException,Form
 from fastapi.responses import Response,RedirectResponse
 from fastapi.encoders import jsonable_encoder
 from pydantic import Field
-from sqlalchemy import select
+from sqlalchemy import select,or_,update
 from ..db import get_db
-from ..models import StudentAccount,User,Classroom,Major,Cohort,Course,CourseResult,Intervention,AcademicResult
+from ..models import StudentAccount,User,Classroom,Major,Cohort,Course,CourseResult,Intervention,AcademicResult,PasswordRecovery
 from ..schemas import Strict,SimulationInput
-from ..security import current_user,own_student,csrf_token
+from ..security import current_user,own_student,csrf_token,check_password,login_allowed,login_succeeded
 from ..services.data import asdict,assessment,audit
 from ..services.csv_import import csv_bytes
+from ..services.student_planning import learning_guidance,student_outlook
 from .api import detail,simulation
 from .pages import templates
 
@@ -21,7 +22,7 @@ STUDENT_PAGES = {
     'overview': ('Tổng quan', 'Theo dõi tình hình học tập và những việc cần ưu tiên.'),
     'results': ('Kết quả học tập', 'Tra cứu bảng điểm, tín chỉ và học phần chưa hoàn thành.'),
     'analysis': ('Phân tích học tập', 'Hiểu điều kiện học vụ và từng yếu tố tạo nên chỉ số hỗ trợ.'),
-    'planning': ('Kế hoạch học tập', 'Thử mục tiêu học kỳ tiếp theo trước khi trao đổi với cố vấn.'),
+    'planning': ('Kế hoạch học tập', 'Biết nên cải thiện điều gì và đặt mục tiêu cho học kỳ tới.'),
     'appointments': ('Cố vấn & lịch hẹn', 'Gửi yêu cầu tư vấn và theo dõi kế hoạch hỗ trợ.'),
     'profile': ('Thông tin sinh viên', 'Thông tin hồ sơ học tập và cố vấn phụ trách.'),
 }
@@ -54,7 +55,7 @@ def student_page(view:str,request:Request,semester_id:int|None=None,q:str='',
                  user=Depends(current_user),db=Depends(get_db)):
     return render_student(view,request,user,db,semester_id,q,course_status)
 
-def render_student(view,request,user,db,semester_id=None,q='',course_status='',simulation_result=None,simulation_inputs=None):
+def render_student(view,request,user,db,semester_id=None,q='',course_status='',simulation_result=None,simulation_inputs=None,contact_error=None,contact_values=None):
     if view not in STUDENT_PAGES:raise HTTPException(404,'Trang không tồn tại')
     model=jsonable_encoder(me(semester_id,user,db))
     title,description=STUDENT_PAGES[view]
@@ -63,13 +64,17 @@ def render_student(view,request,user,db,semester_id=None,q='',course_status='',s
         'title':title,'description':description,'student_pages':STUDENT_PAGES,
         'courses':filter_courses(model['courses'],q,course_status),'q':q,'course_status':course_status,
         'today':date.today(),'period_names':{int(k):v for k,v in model['period_names'].items()},
-        'simulation_result':jsonable_encoder(simulation_result),'simulation_inputs':simulation_inputs or {}})
+        'simulation_result':jsonable_encoder(simulation_result),'simulation_inputs':simulation_inputs or {},
+        'contact_error':contact_error,'contact_values':contact_values or {},
+        'planning_guidance':learning_guidance(model) if view=='planning' else None,
+        'contact_message':request.session.pop('contact_message',None) if view=='profile' else None},status_code=400 if contact_error else 200)
 
 @router.get('/api/me')
 def me(semester_id:int|None=None,user=Depends(current_user),db=Depends(get_db)):
     s=own_student(db,user)
     d=detail(s.id,semester_id,user,db)
     cls=db.get(Classroom,s.class_id);advisor=db.get(User,s.advisor_id)
+    account=db.get(StudentAccount,user.id)
     term=next(p for p in d['semesters'] if p['id']==d['semester_id'])
     if term['kind']!='regular' or not term['completed']:
         raise HTTPException(422,'Vui lòng chọn học kỳ chính đã hoàn thành')
@@ -81,7 +86,8 @@ def me(semester_id:int|None=None,user=Depends(current_user),db=Depends(get_db)):
     plans=[{'id':p['id'],'goal':p['goal'],'action':p['action'],'due_date':p['due_date'],'status':p['status'],'overdue':p['overdue'],'owner':p['owner']} for p in d['interventions']]
     return {'profile':{'id':s.id,'name':s.name,'class_name':cls.name,'major':db.get(Major,cls.major_id).name,
                        'cohort':db.get(Cohort,cls.cohort_id).name,'advisor':advisor.name,
-                       'admission_score':s.admission_score,'admission_scale':s.admission_scale,'admission_method':s.admission_method},
+                       'admission_score':s.admission_score,'admission_scale':s.admission_scale,'admission_method':s.admission_method,
+                       'email':account.email,'phone':account.phone},
             'semesters':[p for p in d['semesters'] if p['kind']=='regular' and p['completed']],
             'period_names':{p['sequence']:p['name'] for p in d['semesters']},
             'semester_id':term['id'],'semester_name':term['name'],'current':current,
@@ -89,11 +95,48 @@ def me(semester_id:int|None=None,user=Depends(current_user),db=Depends(get_db)):
             'assessment':d['assessment'],'chart':d['chart'],'courses':courses,'debts':d['debts'],'appointments':plans,
             'data_notice':'Hồ sơ và bảng điểm trong môi trường này là dữ liệu giả lập, không phải hồ sơ sinh viên thật.'}
 
+@router.post('/student/profile/contacts',include_in_schema=False)
+def update_contacts(request:Request,email:str=Form(''),phone:str=Form(''),current_password:str=Form(''),
+                    user=Depends(current_user),db=Depends(get_db)):
+    from .recovery import normalize_contact
+    own_student(db,user)
+    values={'email':email[:254],'phone':phone[:30]}
+    def invalid(message):
+        return render_student('profile',request,user,db,contact_error=message,contact_values=values)
+    key=('contacts',request.client.host,user.id)
+    login_allowed(key)
+    if len(current_password)>128 or not check_password(user.password_hash,current_password):
+        return invalid('Mật khẩu hiện tại chưa đúng. Vui lòng kiểm tra lại để lưu thông tin khôi phục.')
+    try:
+        email=normalize_contact('email',email) if email.strip() else None
+        phone=normalize_contact('phone',phone) if phone.strip() else None
+    except ValueError as exc:
+        return invalid(str(exc))
+    if not email and not phone:
+        return invalid('Vui lòng cung cấp ít nhất một email hoặc số điện thoại để khôi phục tài khoản.')
+    duplicate=db.scalar(select(StudentAccount.user_id).where(StudentAccount.user_id!=user.id,
+        or_(StudentAccount.email==email if email else False,StudentAccount.phone==phone if phone else False)))
+    if duplicate:
+        return invalid('Thông tin liên hệ này đã được sử dụng. Vui lòng kiểm tra hoặc liên hệ bộ phận học vụ.')
+    account=db.get(StudentAccount,user.id)
+    account.email=email;account.phone=phone
+    user.session_version+=1
+    db.execute(update(PasswordRecovery).where(PasswordRecovery.user_id==user.id).values(consumed=True))
+    audit(db,user,'recovery_contacts_updated',{'email_registered':bool(email),'phone_registered':bool(phone)})
+    db.commit()
+    login_succeeded(key)
+    request.session['session_version']=user.session_version
+    request.session['contact_message']='Đã lưu thông tin khôi phục tài khoản của bạn.'
+    return RedirectResponse('/student/profile#recovery-contacts',303)
+
 @router.post('/api/me/simulate')
 def what_if(data:SimulationInput,semester_id:int,user=Depends(current_user),db=Depends(get_db)):
     s=own_student(db,user)
-    me(semester_id,user,db)
-    return simulation(s.id,data,semester_id,user,db)
+    model=me(semester_id,user,db)
+    result=simulation(s.id,data,semester_id,user,db)
+    result['outlook']=student_outlook(model,data.model_dump(),result)
+    result['student_html']=templates.get_template('student/simulation_result.html').render(simulation_result=result)
+    return result
 
 class AppointmentInput(Strict):
     due_date:date
