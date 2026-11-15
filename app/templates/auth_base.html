@@ -4,8 +4,9 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{% block title %}{% endblock %} · EduAlert</title>
-  <link rel="icon" href="/static/favicon.svg"><link rel="stylesheet" href="/static/login.css">
+  <link rel="icon" href="/static/favicon.svg"><link rel="stylesheet" href="/static/login.css?v=3.5">
   <script defer src="/static/auth.js"></script>
+<link rel="stylesheet" href="/static/campus-ui.css?v=3.5">
 </head>
 <body class="campus-login">
 <a class="skip" href="#auth-title">Đến biểu mẫu</a>
@@ -16,14 +17,14 @@
 <main class="auth-main">
   <div class="auth-layout">
     <section class="auth-introduction" aria-labelledby="intro-title">
-      <h1 id="intro-title">Việc học của bạn,<br><span>trong tầm tay.</span></h1>
-      <p class="intro-description">Một nơi để theo dõi kết quả, chuẩn bị cho học kỳ mới và tìm sự hỗ trợ khi bạn cần.</p>
+      <h1 id="intro-title">Cổng thông tin sinh viên</h1>
+      <p class="intro-description">Tra cứu kết quả, lên kế hoạch học tập và đăng ký lịch tư vấn.</p>
       <ul class="auth-services">
-        <li><span class="service-icon">{{icon('results')}}</span><div><h2>Nắm rõ kết quả học tập</h2><p>Tra cứu bảng điểm, tín chỉ tích lũy và các học phần cần hoàn thành.</p></div></li>
-        <li><span class="service-icon">{{icon('planning')}}</span><div><h2>Chủ động cho học kỳ tới</h2><p>Theo dõi tiến độ và lên kế hoạch phù hợp với mục tiêu của bạn.</p></div></li>
-        <li><span class="service-icon">{{icon('appointments')}}</span><div><h2>Kết nối với cố vấn</h2><p>Đặt lịch trao đổi, nhận hướng dẫn và cùng tháo gỡ khó khăn trong học tập.</p></div></li>
+        <li><span class="service-icon">{{icon('results')}}</span><div><h2>Kết quả học tập</h2><p>Bảng điểm theo học kỳ và các học phần chưa hoàn thành.</p></div></li>
+        <li><span class="service-icon">{{icon('planning')}}</span><div><h2>Kế hoạch học kỳ</h2><p>Đặt mục tiêu GPA và xác định môn cần cải thiện.</p></div></li>
+        <li><span class="service-icon">{{icon('appointments')}}</span><div><h2>Lịch tư vấn</h2><p>Gửi đề nghị và theo dõi lịch trao đổi với cố vấn học tập.</p></div></li>
       </ul>
-      <div class="intro-signoff">Học tập chủ động. <strong>Vững bước mỗi ngày.</strong></div>
+
     </section>
     <section class="auth-panel" aria-labelledby="auth-title">
       {% block form %}{% endblock %}
@@ -31,6 +32,6 @@
     </section>
   </div>
 </main>
-<footer class="auth-footer"><span>© EduAlert · Cổng hỗ trợ học tập</span><span>Đồng hành cùng sinh viên</span></footer>
+<footer class="auth-footer"><span>© EduAlert</span><a href="#account-support">Hỗ trợ đăng nhập</a></footer>
 </body>
 </html>

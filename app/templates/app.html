@@ -1,3 +1,7 @@
+{% from 'student/macros.html' import icon %}
+{% macro workspace_links() -%}
+{% for url,label,key in nav %}{% if user.role=='admin' or key not in ['admin','import','settings'] %}<a href="{{url}}" {% if page==key or (page=='detail' and key=='students') %}aria-current="page"{% endif %}>{{icon({'dashboard':'overview','students':'users','import':'upload','settings':'settings','interventions':'appointments','reports':'analysis','admin':'settings'}[key])}}<span>{{label}}</span></a>{% endif %}{% endfor %}
+{%- endmacro %}
 <!doctype html>
 <html lang="vi">
 <head>
@@ -5,35 +9,22 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="csrf-token" content="{{csrf}}">
 <title>{{title}} · EduAlert</title>
-<link rel="stylesheet" href="/static/portal.css">
-<link rel="stylesheet" href="/static/refinements.css">
+<link rel="stylesheet" href="/static/portal.css?v=3.5">
+<link rel="stylesheet" href="/static/refinements.css?v=3.5">
 <script defer src="/static/vendor/chart.umd.js">
 </script>
-<script defer src="/static/portal.js">
+<script defer src="/static/portal.js?v=3.5">
 </script>
-{% if page=='settings' %}<script defer src="/static/configuration.js"></script>{% endif %}
+{% if page=='settings' %}<script defer src="/static/configuration.js?v=3.5"></script>{% endif %}
+<link rel="stylesheet" href="/static/campus-ui.css?v=3.5">
 </head>
 <body data-page="{{page}}" data-student="{{student_id or ''}}">
 <a href="#main" class="skip">Đến nội dung</a>
 <aside class="sidebar">
-<a href="/dashboard" class="wordmark">Edu<span>Alert</span>
-<svg viewBox="0 0 32 32" aria-hidden="true">
-<path d="M3 19h6l4-12 6 21 4-13h6"/>
-</svg>
-</a>
-<div class="workspace">Không gian cố vấn<br>
-<small>Theo dõi và đồng hành</small>
-</div>
-<nav aria-label="Điều hướng chính">{% for url,label,key in nav %}{% if user.role=='admin' or key not in ['admin','import','settings'] %}<a href="{{url}}" {% if page==key or (page=='detail' and key=='students') %}aria-current="page"{% endif %}>
-<svg viewBox="0 0 24 24" aria-hidden="true">
-<rect x="4" y="4" width="16" height="16" rx="3"/>
-<path d="M4 10h16M10 10v10"/>
-</svg>{{label}}</a>{% endif %}{% endfor %}</nav>
-<div class="side-note">
-<strong>Mỗi cảnh báo là một cơ hội hỗ trợ.</strong>
-<p>Chỉ số nguy cơ giúp ưu tiên nguồn lực; không phải xác suất trượt hoặc bỏ học.</p>
-
-</div>
+<a href="/dashboard" class="wordmark" aria-label="EduAlert — Trang tổng quan"><svg class="workspace-emblem" viewBox="0 0 48 48" aria-hidden="true"><path d="m4 16 20-9 20 9-20 9Z M11 20v12c8 6 18 6 26 0V20 M43 17v15 M17 29h14"/></svg><span>EduAlert</span></a>
+<div class="workspace"><strong>{{'Quản trị học vụ' if user.role=='admin' else 'Cố vấn học tập'}}</strong><small>{{'Tài khoản, hồ sơ và đánh giá' if user.role=='admin' else 'Sinh viên và lịch tư vấn'}}</small></div>
+<nav aria-label="Điều hướng chính">{{workspace_links()}}</nav>
+<details class="staff-mobile-navigation"><summary>Menu học vụ {{icon('menu')}}</summary><nav aria-label="Chức năng học vụ trên điện thoại">{{workspace_links()}}</nav></details>
 </aside>
 <div class="shell">
 <header class="topbar">
@@ -53,9 +44,9 @@
 <div class="page-heading">
 <div>
 <h1>{{title}}</h1>
-<p>{% if page=='dashboard' %}Theo dõi diễn biến, nhận diện ưu tiên và kết nối hỗ trợ.{% elif page=='students' %}Hai kết quả đánh giá độc lập, một góc nhìn đầy đủ hơn.{% elif page=='detail' %}Đồng hành qua từng học kỳ.{% else %}Cổng hỗ trợ và quản lý kết quả học tập.{% endif %}</p>
+<p>{{page_description}}</p>
 </div>
-<span class="demo-label">Dữ liệu trải nghiệm</span>
+
 </div>
 <div id="feedback" role="status" aria-live="polite">
 </div>
@@ -73,10 +64,10 @@
 <label>Lớp<select name="class_id">
 <option value="">Tất cả lớp</option>{% for x in catalogs.classes %}<option value="{{x.id}}">{{x.name}}</option>{% endfor %}</select>
 </label>
-<label>Mức nguy cơ<select name="level">
+<label>Mức hỗ trợ<select name="level">
 <option value="">Tất cả mức</option>{% for x in ['Bình thường','Cần chú ý','Nguy cơ cao','Chưa đủ dữ liệu'] %}<option>{{x}}</option>{% endfor %}</select>
 </label>
-<label>Quy tắc<select name="rule">
+<label>Điều kiện học vụ<select name="rule">
 <option value="">Tất cả kết quả</option>
 <option value="true">Thỏa điều kiện</option>
 <option value="false">Không thỏa</option>
@@ -104,7 +95,7 @@
 <div class="two-col">
 <section class="panel">
 <div class="panel-heading">
-<h2>Phân bố mức nguy cơ</h2>
+<h2>Phân bố mức hỗ trợ</h2>
 <span>Đơn vị: sinh viên</span>
 </div>
 <div class="chart-wrap">
@@ -117,7 +108,7 @@
 <section class="panel">
 <div class="panel-heading">
 <h2>Diễn biến qua học kỳ</h2>
-<span>Cấu hình hiện hành · Số sinh viên / học kỳ</span>
+<span>Số sinh viên theo học kỳ</span>
 </div>
 <div class="chart-wrap">
 <canvas id="trend" aria-label="Diễn biến nguy cơ qua học kỳ" role="img">
@@ -133,26 +124,24 @@
 <span id="denominator">
 </span>
 </div>
-<div id="list">
-</div>
+<div id="list"><p class="loading" role="status">Đang tải danh sách sinh viên…</p></div>
 </section>{% if page=='reports' %}<section class="panel">
 <h2>Trạng thái can thiệp</h2>
 <div id="plan-summary">
 </div>
-<p class="muted">So sánh qua kỳ là mô tả dữ liệu. Không khẳng định can thiệp là nguyên nhân duy nhất của thay đổi.</p>
+<p class="muted">Đối chiếu kết quả qua các kỳ cùng lịch tư vấn và quá trình học tập của sinh viên.</p>
 </section>{% endif %}{% endif %}
 {% if page=='students' %}<section class="panel">
-<div id="list">
-</div>
+<div id="list"><p class="loading" role="status">Đang tải danh sách sinh viên…</p></div>
 <div id="pagination" class="pagination">
 </div>
 </section>{% endif %}
 {% if page=='detail' %}<div class="detail-toolbar">
 <label>Học kỳ đang xét<select id="detail-semester">{% for x in catalogs.semesters|reverse %}{% if x.completed and x.kind=='regular' %}<option value="{{x.id}}">{{x.name}}</option>{% endif %}{% endfor %}</select>
 </label>
-<button id="evaluate" class="primary">Lưu phiên đánh giá</button>
+<button id="evaluate" class="primary">Lưu kết quả đánh giá</button>
 </div>
-<div class="tabs" role="tablist">{% for key,label in [('overview','Tổng quan'),('academic','Lịch sử học tập'),('explain','Giải thích đánh giá'),('support','Can thiệp & theo dõi'),('simulate','Nếu… thì…')] %}<button role="tab" data-tab="{{key}}" aria-selected="{{'true' if loop.first else 'false'}}">{{label}}</button>{% endfor %}</div>
+<div class="tabs" role="tablist">{% for key,label in [('overview','Tổng quan'),('academic','Lịch sử học tập'),('explain','Giải thích đánh giá'),('support','Can thiệp & theo dõi'),('simulate','Thử kế hoạch học tập')] %}<button role="tab" data-tab="{{key}}" aria-selected="{{'true' if loop.first else 'false'}}">{{label}}</button>{% endfor %}</div>
 <section id="overview" class="tab-panel">
 <div id="profile">
 </div>
@@ -268,9 +257,9 @@
 <form id="student-form" class="form-grid">
 <label>Mã sinh viên<input name="id" required pattern="[A-Za-z0-9_-]{1,30}">
 </label>
-<label>Họ và tên giả lập<input name="name" required minlength="2" maxlength="120">
+<label>Họ và tên<input name="name" required minlength="2" maxlength="120">
 </label>
-<label>Lớp<select name="class_id">{% for x in catalogs.classes %}<option>{{x.id}}</option>{% endfor %}</select>
+<label>Lớp<select name="class_id">{% for x in catalogs.classes %}<option value="{{x.id}}">{{x.name}}</option>{% endfor %}</select>
 </label>
 <label>Cố vấn phụ trách<select name="advisor_id">{% for x in users %}{% if x.role=='advisor' and x.active %}<option value="{{x.id}}">{{x.name}}</option>{% endif %}{% endfor %}</select>
 </label>
@@ -278,7 +267,7 @@
 </label>
 <label>Thang điểm<input name="admission_scale" type="number" step="0.01" min="0.01">
 </label>
-<label>Phương thức<input name="admission_method">
+<label>Phương thức xét tuyển<input name="admission_method">
 </label>
 <button class="primary">Lưu sinh viên & phân công</button>
 <button id="lookup-student" type="button">Tải hồ sơ theo mã để sửa</button>
@@ -311,7 +300,7 @@
 <form id="account-form" class="form-grid">
 <label>Tên đăng nhập<input name="username" required minlength="3" maxlength="50" autocomplete="off">
 </label>
-<label>Tên hiển thị giả lập<input name="name" required minlength="2">
+<label>Họ và tên cố vấn<input name="name" required minlength="2">
 </label>
 <label>Mật khẩu ban đầu<input name="password" type="password" required minlength="10" maxlength="128" autocomplete="new-password">
 </label>
@@ -364,10 +353,10 @@
 </div>{% endfor %}</section>
 </section>{% endif %}
 <noscript>
-<p class="notice error">Bật JavaScript để thao tác bảng, biểu đồ và biểu mẫu nghiệp vụ.</p>
+<p class="notice error">Bật JavaScript trong trình duyệt để tải danh sách, biểu đồ và lưu biểu mẫu.</p>
 </noscript>
 </main>
-<footer>EduAlert · Cổng hỗ trợ học tập <span>Bộ quy tắc minh họa phục vụ demo · Dữ liệu giả lập</span>
+<footer><span>EduAlert · Quản lý học tập</span><span>{{'Quản trị học vụ' if user.role=='admin' else 'Cố vấn học tập'}}</span>
 </footer>
 </div>
 <script type="application/json" id="catalog-data">{{catalogs|tojson}}</script>

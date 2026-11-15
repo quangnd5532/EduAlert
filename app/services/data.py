@@ -5,9 +5,10 @@ from sqlalchemy import select
 from ..models import Student, StudentAccount, Classroom, Semester, AcademicResult, WarningHistory, ConfigVersion, Evaluation, Intervention, Debt, Course, Audit, now
 from .assessment import evaluate
 from .sorting import SORT_OPTIONS,sort_students
+from .presentation import display_text
 
 def asdict(obj):
-    return {c.name:getattr(obj,c.name) for c in obj.__table__.columns}
+    return {c.name:display_text(getattr(obj,c.name)) if c.name in ('name','note','admission_method') else getattr(obj,c.name) for c in obj.__table__.columns}
 def audit(db,user,action,detail):
     db.add(Audit(user_id=user.id if user else None,action=action,detail=detail))
 def select_config(db,student):
@@ -40,7 +41,7 @@ def assessment(db,student,semester_id,config=None,override=False,save=False):
               'warnings':[w for w in warnings if w['sequence']<term.sequence]}
     output=evaluate(**snapshot,target=term.sequence,config=c.payload if c else None)
     output['config_id']=c.id if c else None
-    output['config_name']=c.name if c else 'Chưa có cấu hình áp dụng'
+    output['config_name']=display_text(c.name) if c else 'Chưa có cấu hình áp dụng'
     if save:
         latest=db.scalars(select(Evaluation).where(Evaluation.student_id==student.id,Evaluation.semester_id==semester_id).order_by(Evaluation.id.desc())).first()
         if not latest or latest.input_data!=snapshot or latest.config_id!=output['config_id'] or latest.output!=output:
@@ -92,4 +93,4 @@ def summary(db,user,params):
             'priority':items[:12],
             'interventions':{st:sum(p.status==st for p in plans) for st in ['Chưa xử lý','Đang hỗ trợ','Chờ theo dõi','Hoàn tất']}}
 def debt_list(db,sid,semester_id):
-    return [{'course_id':c.id,'name':c.name,'credits':c.credits} for d,c in db.execute(select(Debt,Course).join(Course,Debt.course_id==Course.id).where(Debt.student_id==sid,Debt.semester_id==semester_id))]
+    return [{'course_id':c.id,'name':display_text(c.name),'credits':c.credits} for d,c in db.execute(select(Debt,Course).join(Course,Debt.course_id==Course.id).where(Debt.student_id==sid,Debt.semester_id==semester_id))]

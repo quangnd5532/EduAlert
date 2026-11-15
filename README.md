@@ -2,7 +2,7 @@
 
 Dự án giữa kỳ nhóm 5A: FastAPI + Jinja2 + SQLAlchemy + SQLite, giao diện tiếng Việt. Khối quản lý có 9 màn hình chính; cổng sinh viên có 6 trang riêng. Hồ sơ sinh viên và tài khoản cố vấn đều giả lập. Hai kết quả độc lập: xét điều kiện cảnh báo theo cấu hình và điểm ưu tiên hỗ trợ 0–100.
 
-**Bản hiện tại 3.4.0 — 09/11/2026:** chạy tại **http://127.0.0.1:8001**. Trang kế hoạch có mục tiêu GPA dễ hiểu, học phần cần ưu tiên và việc sinh viên có thể làm theo tuần. Đã có dữ liệu khóa 23/24/25, 17 kiểu sắp xếp, 4 mẫu CSV và biểu mẫu cấu hình. **107 kiểm thử Python và 10 kiểm thử JavaScript đạt**. Xem [kế hoạch học tập 3.4](docs/student-planning.md), [quản lý dữ liệu 3.3](docs/data-management.md) và [khôi phục mật khẩu](docs/password-recovery.md).
+**Bản hiện tại 3.5.0 — 14/11/2026:** chạy tại **http://127.0.0.1:8001**. Giao diện học vụ thống nhất cho sinh viên, cố vấn và quản trị; nội dung tập trung vào kết quả, việc cần làm và lịch tư vấn. **110 kiểm thử Python và 13 kiểm thử JavaScript đạt**. Xem [giao diện 3.5 và phạm vi kiểm tra](docs/interface-polish.md), [kế hoạch học tập](docs/student-planning.md), [quản lý dữ liệu](docs/data-management.md) và [khôi phục mật khẩu](docs/password-recovery.md).
 
 **Cập nhật trang đăng nhập:** bổ sung quên mật khẩu qua email sinh viên hoặc số điện thoại đã đăng ký, cập nhật thông tin khôi phục trong hồ sơ và bỏ tài khoản trải nghiệm khỏi giao diện. Xem [luồng sử dụng và cấu hình gửi email/SMS thật](docs/password-recovery.md). Dịch vụ gửi mã cần được đơn vị vận hành cấu hình riêng.
 

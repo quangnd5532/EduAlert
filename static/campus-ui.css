@@ -1,0 +1,257 @@
+/* Shared visual language for the student, adviser and administration portals. */
+:root {
+  --campus-navy: #153958;
+  --campus-link: #215f9a;
+  --campus-ink: #27364b;
+  --campus-muted: #52677d;
+  --campus-line: #dbe2e9;
+  --campus-ground: #f2f4f7;
+  --campus-radius: 10px;
+  --campus-focus: #b67a10;
+  --teal: var(--campus-link);
+  --muted: var(--campus-muted);
+  --line: var(--campus-line);
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 14px;
+  color: var(--campus-ink);
+  background: var(--campus-ground);
+  line-height: 1.65;
+}
+body { color: var(--campus-ink); background: var(--campus-ground); }
+a { color: var(--campus-link); text-underline-offset: 4px; }
+a:hover { text-decoration-thickness: 1px; }
+::selection { color: #153958; background: #d3e4f2; }
+input, select, textarea { caret-color: var(--campus-link); }
+:focus-visible { outline: 3px solid var(--campus-focus); outline-offset: 3px; }
+h1 { font-size: 26px; line-height: 1.4; letter-spacing: -.45px; color: var(--campus-navy); font-weight: 650; }
+h2 { color: var(--campus-navy); }
+label { color: #344e67; font-size: 13px; line-height: 1.6; }
+input, select, textarea { font-size: 14px; line-height: 1.5; border-color: #b8c8d7; border-radius: 6px; }
+input:not([type=checkbox]):not([type=radio]), select { min-height: 44px; }
+input:hover, select:hover, textarea:hover { border-color: #8199af; }
+input[type=checkbox], input[type=radio] { accent-color: var(--campus-link); }
+button, .button { font-size: 13px; min-height: 42px; border-radius: 6px; border-color: #c4d1de; }
+button.primary, .button.primary { background: var(--campus-link); border-color: var(--campus-link); color: #fff; }
+button.primary:hover, .button.primary:hover { background: #194c7a; border-color: #194c7a; }
+button:disabled, .button[aria-disabled=true] { cursor: not-allowed; opacity: .6; }
+button[aria-busy=true] { cursor: progress; }
+.panel { border-radius: var(--campus-radius); border-color: var(--campus-line); }
+.panel-heading { gap: 16px; }
+.panel-heading h2 { font-size: 16px; line-height: 1.5; font-weight: 650; }
+.panel-heading>span { font-size: 12px; color: var(--campus-muted); }
+table { font-size: 13px; line-height: 1.7; }
+td, th { padding: 14px 15px; border-bottom-color: #e3e9ef; }
+thead, thead th { color: #3f5871; background: #eef2f6; font-size: 12px; }
+tbody td small, .cell-detail { font-size: 12px; line-height: 1.6; }
+tbody tr:hover { background: #f5f8fb; }
+.badge { font-size: 12px; padding: 5px 9px; line-height: 1.55; font-weight: 600; border-radius: 5px; }
+.notice { font-size: 13px; line-height: 1.8; border-radius: 8px; }
+.empty { font-size: 14px; line-height: 1.8; padding: 28px 22px; }
+.empty h3 { color: #344f69; font-size: 16px; margin: 0 0 9px; }
+.empty p { margin: 0 auto; max-width: 48ch; }
+.loading { font-size: 14px; padding: 22px; color: var(--campus-muted); }
+.text-link { font-size: 13px; line-height: 1.7; }
+
+/* Account entry: a direct introduction and a single sign-in form. */
+.auth-header-inner { max-width: 1200px; padding: 22px 36px; min-height: 96px; }
+.auth-main { max-width: 1200px; padding: 44px 36px; }
+.auth-layout { grid-template-columns: 1.08fr 1fr; border-radius: var(--campus-radius); }
+.auth-introduction { padding: 44px 40px; background: #eaf0f6; }
+.auth-introduction h1 { font-size: 32px; line-height: 1.4; letter-spacing: -.7px; max-width: 17ch; font-weight: 650; }
+.intro-description { font-size: 15px; max-width: 42ch; line-height: 1.85; }
+.auth-services { margin: 24px 0 0; }
+.auth-services li { gap: 14px; padding: 20px 0; }
+.service-icon { width: 28px; height: 28px; background: transparent; border-radius: 0; }
+.auth-services h2 { font-size: 15px; }
+.auth-services p { font-size: 14px; line-height: 1.8; max-width: 40ch; }
+.auth-panel { padding: 44px 40px 32px; }
+.auth-title h2 { font-size: 25px; font-weight: 650; }
+.auth-field label { font-size: 14px; }
+.auth-field input { font-size: 15px; }
+.auth-footer { max-width: 1200px; padding: 0 36px 24px; font-size: 12px; }
+.auth-footer>a { font-size: 12px; }
+
+/* Adviser/admin layout shares the student portal's palette and spacing. */
+.sidebar { width: 248px; padding: 27px 18px; background: #fff; border-right: 1px solid var(--campus-line); }
+.wordmark { color: var(--campus-navy); font-size: 27px; line-height: 1.3; gap: 10px; letter-spacing: -.7px; }
+.wordmark>span { color: inherit; }
+.wordmark .workspace-emblem { width: 38px; height: 38px; margin: 0; stroke: #b78837; stroke-width: 2; fill: none; flex: none; }
+.workspace { border: 0; border-radius: 0; padding: 0 10px; margin: 29px 0 22px; color: #344f69; }
+.workspace strong { font-size: 14px; font-weight: 600; }
+.workspace small { font-size: 12px; color: var(--campus-muted); }
+.sidebar>nav { display: grid; gap: 4px; }
+.sidebar nav>a { font-size: 14px; padding: 11px 12px; gap: 11px; line-height: 1.6; min-height: 44px; border-radius: 6px; color: #435a72; }
+.sidebar nav>a[aria-current] { background: #e8eff6; color: #164d7c; font-weight: 650; }
+.sidebar nav>a:hover { background: #f0f4f8; }
+.sidebar nav svg { width: 19px; height: 19px; }
+.staff-mobile-navigation { display: none; }
+.staff-mobile-navigation:not([open])>nav { display: none!important; }
+.shell { margin-left: 248px; }
+.shell .topbar { min-height: 96px; padding: 20px 32px; color: #fff; background: var(--campus-navy); border-bottom: 0; }
+.topbar>span { font-size: 13px; }
+.topbar .muted, .topbar .user small { color: #d0dfed; }
+.topbar .user { font-size: 13px; }
+.topbar .avatar { width: 37px; height: 37px; color: #153958; background: #dce8f2; }
+.topbar .text-button { color: #fff; min-height: 40px; padding: 8px 12px; }
+.topbar .text-button:hover { background: #274d6b; }
+.shell main { max-width: 1450px; padding: 30px 32px 40px; }
+.page-heading { margin-bottom: 25px; }
+.page-heading h1 { margin-bottom: 8px; }
+.page-heading p { font-size: 14px; line-height: 1.8; color: var(--campus-muted); }
+.shell .panel { padding: 22px; margin-bottom: 24px; }
+.filters { padding: 18px; border-radius: var(--campus-radius); gap: 15px 12px; }
+.filters label { font-size: 12px; }
+.metrics { border-radius: var(--campus-radius); }
+.metric { padding: 20px 22px; }
+.metric span { font-size: 13px; }
+.metric b { color: var(--campus-navy); font-size: 29px; font-weight: 650; }
+.metric small { font-size: 12px; line-height: 1.6; }
+.tabs { border-bottom-color: var(--campus-line); gap: 10px; }
+.tabs button { min-height: 46px; font-size: 14px; color: #52677d; }
+.tabs button[aria-selected=true] { color: var(--campus-link); border-bottom-color: var(--campus-link); }
+.plan { padding: 23px; border-radius: var(--campus-radius); }
+.plan p, .plan time { font-size: 13px; line-height: 1.8; }
+.plan .notes { background: #f7f9fc; margin: 18px -5px 0; padding: 13px 14px 2px; border-radius: 6px; border-top: 0; }
+.assessment-meta { margin-top: 18px; padding-top: 15px; border-top: 1px solid var(--campus-line); font-size: 12px; color: var(--campus-muted); }
+.assessment-meta summary { color: var(--campus-link); }
+.assessment-meta dl { display: grid; grid-template-columns: 150px 1fr; gap: 8px 15px; margin: 14px 0; }
+.assessment-meta dt { font-weight: 600; }
+.assessment-meta dd { margin: 0; }
+.shell footer { font-size: 12px; padding: 19px 32px; background: #fff; border-top: 1px solid var(--campus-line); }
+
+/* Student pages: readable data and the next useful action. */
+.campus-masthead .masthead-inner { min-height: 96px; }
+.campus-sidebar { padding-left: 18px; padding-right: 18px; }
+.sidebar-student>b { font-size: 15px; }
+.sidebar-student>span:not(.student-monogram) { font-size: 12px; line-height: 1.7; }
+.nav-group { font-size: 11px; letter-spacing: .35px; }
+.campus-sidebar nav>a { min-height: 44px; font-size: 14px; }
+.sidebar-context span, .sidebar-context small { font-size: 12px; }
+.campus-content .page-title>div>p { font-size: 14px; line-height: 1.8; }
+.breadcrumb { font-size: 12px; }
+.campus-portal .panel-heading { padding: 17px 22px; }
+.campus-portal .panel-note { font-size: 13px; line-height: 1.85; }
+.profile-grid dt { font-size: 12px; }
+.profile-grid dd { font-size: 14px; line-height: 1.75; }
+.student-overview-intro { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 0 0 20px; }
+.student-overview-intro>div { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 18px; }
+.student-overview-intro h2 { font-size: 17px; margin: 0; font-weight: 650; }
+.student-overview-intro .button { flex: none; }
+.academic-summary-three { grid-template-columns: repeat(3,minmax(0,1fr)); border-radius: var(--campus-radius); }
+.academic-summary-three>div { padding: 21px 23px; }
+.academic-summary-three strong { font-size: 28px; line-height: 1.6; }
+.academic-summary-three span { font-size: 13px; }
+.academic-summary-three small { font-size: 12px; line-height: 1.6; }
+.overview-columns { grid-template-columns: 1.2fr 1fr; }
+.task-list { padding: 0 22px; }
+.task-list li { padding: 20px 0; gap: 14px; }
+.task-list li b { font-size: 14px; line-height: 1.6; }
+.task-list li p { font-size: 13px; line-height: 1.85; margin: 7px 0; }
+.task-list li a { font-size: 13px; }
+.panel-footer-action { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding: 0 22px 22px; }
+.student-assessment-summary .panel-footer-action { padding-top: 4px; }
+.factor-explanation { padding: 20px 22px; }
+.factor-explanation h3 { font-size: 14px; }
+.factor-explanation p { font-size: 14px; line-height: 1.85; }
+.student-assessment-details>summary { padding: 19px 22px; font-size: 14px; color: var(--campus-link); cursor: pointer; }
+.student-assessment-details .rule-group { padding-bottom: 16px; }
+.condition b, .condition span { font-size: 13px; line-height: 1.8; }
+.assessment-conclusion b { font-size: 15px; }
+.assessment-conclusion p { font-size: 13px; }
+.campus-footer { font-size: 12px; padding: 18px 32px; }
+.campus-footer>a { font-size: 12px; white-space: nowrap; }
+.adviser-contact h2 { font-size: 18px; }
+.adviser-contact p { font-size: 13px; }
+.table-foot { font-size: 12px; }
+.data-details>summary { font-size: 13px; padding: 15px 22px; }
+.campus-message { min-height: 100vh; min-height: 100svh; display: grid; align-items: center; padding: 24px 16px; }
+.campus-message .message { width: 100%; max-width: 640px; padding: 32px; margin: 0 auto; background: #fff; border: 1px solid var(--campus-line); border-radius: var(--campus-radius); }
+.message-brand { display: inline-block; margin-bottom: 25px; font-size: 23px; font-weight: 650; text-decoration: none; color: var(--campus-navy); }
+.campus-message .message>p { font-size: 14px; line-height: 1.9; color: var(--campus-muted); }
+.campus-message .page-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 25px 0 0; }
+
+@media (max-width:1100px) {
+  .shell main { padding: 26px 24px 34px; }
+  .shell .topbar { padding-left: 24px; padding-right: 24px; }
+  .overview-columns { grid-template-columns: 1fr; }
+}
+@media (max-width:820px) {
+  .sidebar { position: relative; width: 100%; padding: 17px 22px 0; }
+  .sidebar .wordmark { font-size: 25px; }
+  .sidebar .workspace, .sidebar>nav { display: none; }
+  .sidebar .workspace-emblem { width: 33px; height: 33px; }
+  .staff-mobile-navigation { display: block; margin-top: 12px; }
+  .staff-mobile-navigation>summary { display: flex; align-items: center; justify-content: space-between; min-height: 46px; color: #345370; font-size: 13px; cursor: pointer; list-style: none; }
+  .staff-mobile-navigation>summary::-webkit-details-marker { display: none; }
+  .sidebar .staff-mobile-navigation nav { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 6px 0 16px; overflow: visible; }
+  .sidebar .staff-mobile-navigation nav a { white-space: normal; margin: 0; }
+  .sidebar .staff-mobile-navigation nav svg { display: block; }
+  .shell { margin-left: 0; }
+  .shell .topbar { min-height: 72px; }
+  .topbar>span { display: none; }
+  .topbar .user { width: 100%; }
+  .user form { margin-left: auto; }
+  .student-overview-intro { align-items: flex-start; }
+  .auth-introduction { padding: 34px 30px; }
+  .auth-panel { padding: 36px 30px; }
+}
+@media (max-width:760px) {
+  .auth-main { padding: 26px 20px; max-width: 550px; }
+  .auth-header-inner { min-height: 84px; padding: 16px 22px; }
+  .auth-layout { display: flex; }
+  .auth-panel { padding: 30px 25px; }
+  .auth-introduction h1 { font-size: 27px; max-width: 20ch; }
+  .auth-services p { font-size: 13px; }
+  .auth-field input { font-size: 16px; }
+  .auth-footer { padding: 0 22px 22px; }
+}
+@media (max-width:640px) {
+  h1 { font-size: 23px; }
+  input:not([type=checkbox]):not([type=radio]), select, textarea { font-size: 16px; }
+  .shell main { padding: 23px 16px 30px; }
+  .shell .panel { padding: 18px 16px; }
+  .sidebar { padding: 16px 16px 0; }
+  .sidebar .staff-mobile-navigation nav { grid-template-columns: 1fr; }
+  .shell .topbar { padding: 14px 16px; }
+  .topbar .user { font-size: 12px; }
+  .page-heading p { font-size: 13px; }
+  .filters { padding: 15px; gap: 14px 10px; }
+  .filters label { flex-basis: calc(50% - 10px); }
+  .filters label:first-child { flex-basis: 100%; }
+  .filters .button, .filters>button { flex: 1; }
+  .metric { padding: 17px; }
+  .metric b { font-size: 27px; }
+  .metric small { font-size: 11px; }
+  td, th { padding: 12px; }
+  .shell footer { padding: 17px 16px; }
+  .student-overview-intro { display: block; }
+  .student-overview-intro>div { display: block; }
+  .student-overview-intro .badge { margin-top: 9px; }
+  .student-overview-intro>.button { margin-top: 15px; width: 100%; }
+  .academic-summary-three { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .academic-summary-three>div { padding: 14px 10px; border-bottom: 0!important; border-right: 1px solid var(--campus-line)!important; }
+  .academic-summary-three>div:last-child { border-right: 0!important; }
+  .academic-summary-three strong { font-size: 23px; }
+  .academic-summary-three span { font-size: 12px; }
+  .academic-summary-three small { font-size: 11px; }
+  .campus-portal .panel-heading { padding: 15px 17px; }
+  .campus-portal .page-title>div>p { font-size: 13px; }
+  .task-list { padding: 0 17px; }
+  .panel-footer-action { padding: 0 17px 18px; }
+  .factor-explanation { padding: 18px 17px; }
+  .student-assessment-details>summary { padding: 17px; }
+  .campus-footer { padding: 17px 16px; }
+  .campus-footer>a { display: block; margin-top: 8px; }
+  .assessment-meta dl { grid-template-columns: 1fr; gap: 4px; }
+  .assessment-meta dd { margin-bottom: 10px; }
+}
+@media print {
+  body { background: #fff; }
+  .staff-mobile-navigation, .student-overview-intro>.button, .panel-footer-action, .campus-footer { display: none!important; }
+  .shell { margin: 0; }
+  .academic-summary-three { grid-template-columns: 1fr 1fr 1fr; }
+  table { font-size: 11px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  *, *::before, *::after { scroll-behavior: auto!important; transition: none!important; }
+}

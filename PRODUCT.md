@@ -1,5 +1,7 @@
 # EduAlert — sản phẩm hiện tại
 
+**Cập nhật 3.5:** chuẩn hóa giao diện cổng học vụ cho ba vai trò; bỏ nhãn demo/trải nghiệm và cách gọi giả lập khỏi phần sử dụng, rút gọn khẩu hiệu và thông tin kỹ thuật. Tổng quan sinh viên ưu tiên việc cần làm; nhận xét và cách tính điểm tách theo mức chi tiết. Giữ nguồn dữ liệu mẫu trong tài liệu và bảo toàn bản ghi gốc. Xem `docs/interface-polish.md`.
+
 **Cập nhật 3.4:** trang kế hoạch học tập nói bằng GPA, tín chỉ và việc sinh viên cần làm. Có ưu tiên học phần, định hướng theo dữ liệu cá nhân và các bước tự học theo tuần; kết quả mục tiêu giải thích mức điểm cần đạt, cảnh báo mục tiêu không khả thi và thu gọn phần GPA tích lũy tùy chọn. Không trình bày điểm đóng góp thuật toán trên trang kế hoạch. Xem `docs/student-planning.md`.
 
 **Cập nhật 3.3:** dữ liệu theo năm tuyển sinh 23/24/25, lịch sử học tập bắt đầu từ khi nhập học, sắp xếp/lọc/xuất thống nhất. Bốn mẫu CSV có dữ liệu và hướng dẫn. Cấu hình đánh giá sử dụng biểu mẫu và nhóm điều kiện, không yêu cầu JSON. Xem `docs/data-management.md`.

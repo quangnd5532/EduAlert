@@ -13,6 +13,7 @@ from ..security import current_user,own_student,csrf_token,check_password,login_
 from ..services.data import asdict,assessment,audit
 from ..services.csv_import import csv_bytes
 from ..services.student_planning import learning_guidance,student_outlook
+from ..services.presentation import display_text
 from .api import detail,simulation
 from .pages import templates
 
@@ -81,7 +82,7 @@ def me(semester_id:int|None=None,user=Depends(current_user),db=Depends(get_db)):
     current=next((r for r in d['results'] if r['semester_id']==term['id']),None)
     courses=[]
     for r,c in db.execute(select(CourseResult,Course).join(Course,CourseResult.course_id==Course.id).where(CourseResult.student_id==s.id,CourseResult.semester_id==term['id']).order_by(CourseResult.course_id)):
-        courses.append({'id':c.id,'name':c.name,'credits':c.credits,'grade':r.grade,
+        courses.append({'id':c.id,'name':display_text(c.name),'credits':c.credits,'grade':r.grade,
                         'status':'Chưa đồng bộ điểm' if r.grade is None else 'Không đạt' if r.grade==0 else 'Đạt'})
     plans=[{'id':p['id'],'goal':p['goal'],'action':p['action'],'due_date':p['due_date'],'status':p['status'],'overdue':p['overdue'],'owner':p['owner']} for p in d['interventions']]
     return {'profile':{'id':s.id,'name':s.name,'class_name':cls.name,'major':db.get(Major,cls.major_id).name,

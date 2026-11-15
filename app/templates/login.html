@@ -2,7 +2,7 @@
 {% from 'student/macros.html' import icon %}
 {% block title %}Đăng nhập{% endblock %}
 {% block form %}
-<div class="auth-title"><h2 id="auth-title">Chào mừng bạn trở lại</h2><p>Đăng nhập để tiếp tục hành trình học tập của bạn.</p></div>
+<div class="auth-title"><h2 id="auth-title">Đăng nhập</h2><p>Nhập tài khoản do nhà trường cấp.</p></div>
 {% if message %}<p class="auth-notice success" role="status">{{icon('check')}}<span>{{message}}</span></p>{% endif %}
 {% if error %}<p class="auth-notice error" role="alert" id="auth-error">{{error}}</p>{% endif %}
 <form method="post" action="/login" class="auth-form" data-loading-label="Đang đăng nhập…">

@@ -46,12 +46,12 @@ test('student table escapes untrusted names and explains unknown separately', ()
   assert.ok(html.includes('Không thỏa điều kiện'));
 });
 
-test('evaluation explanation names both outcomes, version and unsaved timestamp', () => {
+test('evaluation keeps both outcomes and puts audit details in a disclosure', () => {
   const { context } = harness();
   const html = context.explanation(assessment({ rule: { op: 'lt', field: 'gpa', value: 1.2,
     actual: 1.9, state: 'false', reason: 'gpa = 1.9; lt 1.2' } }));
-  for (const text of ['A. Kiểm tra cảnh báo học vụ', 'B. Điểm cảnh báo sớm', '71.50',
-    '2.8 → 2.3 → 1.9', 'Cấu hình #1', '2026-11-03T00:00:00Z', 'chưa lưu phiên mới']) {
+  for (const text of ['Điều kiện học vụ', 'Ưu tiên hỗ trợ học tập', '71.50',
+    '2.8 → 2.3 → 1.9', '<details class="assessment-meta">', 'Thông tin lần đánh giá', '2026', 'Chưa lưu kết quả này']) {
     assert.ok(html.includes(text), text);
   }
 });
@@ -68,7 +68,7 @@ test('intervention rendering preserves overdue and before/after comparisons safe
   assert.ok(html.includes('Lịch hẹn quá hạn'));
   assert.ok(html.includes('1.6 (Kỳ 4)'));
   assert.ok(html.includes('2.3 (Kỳ 5)'));
-  assert.ok(html.includes('không kết luận quan hệ nhân quả'));
+  assert.ok(html.includes('cùng tình hình học tập của sinh viên'));
   assert.ok(html.includes('<option selected>Đang hỗ trợ</option>'));
 });
 
@@ -79,7 +79,7 @@ test('API sends CSRF and JSON and exposes field errors', async () => {
     return { ok: false, json: async () => ({ detail: [{ loc: ['body', 'gpa'], msg: 'GPA ≤ 4' }] }) };
   });
   await assert.rejects(context.api('/api/simulate', { method: 'POST', body: { gpa: 5 } }),
-    error => error.message.includes('body.gpa') && error.issues[0].loc[1] === 'gpa');
+    error => error.message.includes('GPA học kỳ') && !error.message.includes('body.gpa') && error.issues[0].loc[1] === 'gpa');
   assert.equal(sent.headers['X-CSRF-Token'], 'fixture-csrf-token');
   assert.equal(sent.headers['Content-Type'], 'application/json');
   assert.deepEqual(JSON.parse(sent.body), { gpa: 5 });
@@ -175,7 +175,7 @@ function studentPlanner(fetchImpl) {
   fixture.context.document.body.dataset={page:'student',view:'planning'};
   fixture.context.window.matchMedia=()=>({matches:true});
   vm.runInContext(fs.readFileSync('static/student.js','utf8'),fixture.context);
-  return {listeners,output,button,form};
+  return {listeners,output,button,form,nodes:fixture.nodes};
 }
 
 test('student plan uses the same server view and invalidates results after editing', async () => {
@@ -199,4 +199,34 @@ test('student plan cannot display a response for inputs edited while waiting', a
   await submitting;
   assert.ok(!planner.output.innerHTML.includes('Old target result'));
   assert.ok(planner.output.innerHTML.includes('thay đổi mục tiêu'));
+});
+
+test('network failures give a recovery action without transport jargon', async () => {
+  const { context }=harness(async()=>{throw new TypeError('Failed to fetch');});
+  await assert.rejects(context.api('/api/students'),error=>error.message.includes('Kiểm tra kết nối mạng')&&!error.message.includes('Failed to fetch'));
+});
+
+test('form prevents duplicate requests and recovers its submit control after failure', async () => {
+  let resolve,calls=0;
+  const planner=studentPlanner(()=>{calls++;return new Promise(done=>{resolve=done;});});
+  const feedback={textContent:'',className:'',scrollIntoView:()=>{}};
+  planner.nodes.set('#feedback',feedback);
+  const submit=planner.listeners.get('submit')[0];
+  const waiting=submit({preventDefault:()=>{}});
+  assert.equal(planner.button.disabled,true);
+  await submit({preventDefault:()=>{}});
+  assert.equal(calls,1);
+  resolve({ok:false,status:503,json:async()=>({detail:'Hệ thống đang bận. Vui lòng thử lại.'})});
+  await waiting;
+  assert.equal(planner.button.disabled,false);
+  assert.ok(feedback.textContent.includes('Vui lòng thử lại'));
+});
+
+test('display labels preserve user-authored values and date-only appointment days', () => {
+  const {context}=harness();
+  assert.equal(context.displayText('constructor'),'constructor');
+  assert.equal(context.displayText('Bản demo của người dùng'),'Bản demo của người dùng');
+  assert.equal(context.displayText('Bộ quy tắc minh họa phục vụ demo'),'Đánh giá học tập chung');
+  assert.equal(context.displayDay('2026-11-14'),'14/11/2026');
+  assert.ok(context.studentTable([]).includes('xóa bớt bộ lọc'));
 });

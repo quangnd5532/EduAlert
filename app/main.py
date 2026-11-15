@@ -24,7 +24,7 @@ if not secret:
     if not key.exists(): key.write_text(secrets.token_urlsafe(48),encoding='utf-8')
     secret=key.read_text(encoding='utf-8').strip()
 if len(secret)<32: raise RuntimeError('EDUALERT_SECRET cần tối thiểu 32 ký tự')
-app=FastAPI(title='EduAlert — Cổng hỗ trợ học tập',version='3.4.0',docs_url=None,redoc_url=None,description='Cổng sinh viên và cố vấn; dữ liệu giả lập; chỉ số ưu tiên hỗ trợ có giải thích.')
+app=FastAPI(title='EduAlert — Cổng hỗ trợ học tập',version='3.5.0',docs_url=None,redoc_url=None,description='Cổng sinh viên và cố vấn; dữ liệu giả lập; chỉ số ưu tiên hỗ trợ có giải thích.')
 app.state.recovery_secret=secret
 @app.middleware('http')
 async def protection(request:Request,call_next):
@@ -79,8 +79,8 @@ def health(db=Depends(get_db)):
         db.execute(select(StudentAccount.email,StudentAccount.phone).limit(1))
         db.execute(select(CourseResult.id).limit(1))
     except SQLAlchemyError:
-        return JSONResponse({'status':'database_migration_required','application':'edualert','version':'3.4.0'},503)
-    return {'status':'ok','application':'edualert','version':'3.4.0'}
+        return JSONResponse({'status':'database_migration_required','application':'edualert','version':'3.5.0'},503)
+    return {'status':'ok','application':'edualert','version':'3.5.0'}
 @app.get('/docs',include_in_schema=False)
 def local_docs():
     return get_swagger_ui_html(openapi_url='/openapi.json',title='EduAlert API',swagger_js_url='/static/vendor/swagger-ui-bundle.js',swagger_css_url='/static/vendor/swagger-ui.css',swagger_favicon_url='/static/favicon.svg',swagger_ui_parameters={'tryItOutEnabled':True})

@@ -11,7 +11,7 @@ os.chdir(root)
 commands=[[sys.executable,'-m','compileall','-q','app','migrations','scripts','tests'],[sys.executable,'-m','pytest','-q']]
 node=shutil.which('node')
 if node:commands.extend([[node,'--check',path] for path in ('static/student.js','static/auth.js','static/configuration.js','static/portal.js')]+[[node,'--test','tests/frontend.test.cjs']])
-report=[f'EduAlert 3.4 verification: {datetime.now(timezone.utc).isoformat()}',f'Python: {sys.version}',
+report=[f'EduAlert 3.5 verification: {datetime.now(timezone.utc).isoformat()}',f'Python: {sys.version}',
         'Scope: Python integration/unit tests and JavaScript unit/syntax checks. Browser visual checks are separate.']
 failed=False
 for command in commands:
